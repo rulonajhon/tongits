@@ -13,7 +13,7 @@ import { useSound } from './useSound'
  */
 export function useGameActions(gameId: string) {
   const pendingAction = useGameStore((s) => s.pendingAction)
-  const { playDraw, playDiscard, playMeld, playError } = useSound()
+  const { playDraw, playDiscard, playMeld, playError, playFight } = useSound()
 
   const run = useCallback(
     async (payload: GameActionPayload, onSuccess?: () => void) => {
@@ -45,6 +45,7 @@ export function useGameActions(gameId: string) {
     (meldId: string, cards: CardCode[]) => run({ action: 'sapaw', meldId, cards }, playMeld),
     [run, playMeld],
   )
+  const fight = useCallback(() => run({ action: 'call_fight' }, playFight), [run, playFight])
 
-  return { draw, discard, meld, sapaw, pendingAction }
+  return { draw, discard, meld, sapaw, fight, pendingAction }
 }

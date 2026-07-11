@@ -5,6 +5,7 @@ import {
   applyCallTongits,
   applyDiscard,
   applyDraw,
+  applyFight,
   applyMeld,
   applySapaw,
   computeFightResults,
@@ -21,7 +22,7 @@ import {
 
 interface RequestBody {
   gameId: string
-  action: 'draw' | 'discard' | 'meld' | 'sapaw' | 'call_tongits'
+  action: 'draw' | 'discard' | 'meld' | 'sapaw' | 'call_tongits' | 'call_fight'
   card?: CardCode
   type?: MeldType
   cards?: CardCode[]
@@ -65,7 +66,7 @@ function winPatch(win: WinResult) {
 function resultsPatch(win: WinResult) {
   const players = win.finalHands.map((h) => ({ playerId: h.playerId, unmeldedCards: h.cards }))
   if (win.winType === 'fight') {
-    const results = computeFightResults(players)
+    const results = computeFightResults(players, win.fightInitiatorId)
     const winner = results.find((r) => r.isWinner)
     return {
       results: results.map((r) => ({
@@ -258,6 +259,18 @@ Deno.serve(async (req) => {
             melds_insert,
             melds_update,
             move: { player_id: userId, action: 'call_tongits', payload: { melds: body.melds } },
+            results: win.results,
+          }
+          break
+        }
+
+        case 'call_fight': {
+          const result = applyFight(state, userId)
+          const win = winPatch(result.win!)
+          patch = {
+            game: win.game,
+            hand_counts: handCountsPatch(result.state),
+            move: { player_id: userId, action: 'call_fight', payload: {} },
             results: win.results,
           }
           break

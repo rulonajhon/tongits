@@ -66,4 +66,49 @@ describe('computeFightResults', () => {
     expect(results.every((r) => !r.isWinner)).toBe(true)
     expect(results.every((r) => r.score === 0)).toBe(true)
   })
+
+  it('doubles the payout when the player who called the fight loses it', () => {
+    const results = computeFightResults(
+      [
+        { playerId: 'p1', unmeldedCards: ['AS'] }, // lowest — actual winner
+        { playerId: 'p2', unmeldedCards: ['5H'] }, // called the fight, guessed wrong
+        { playerId: 'p3', unmeldedCards: ['KD'] },
+      ],
+      'p2',
+    )
+    const winner = results.find((r) => r.isWinner)!
+    const caller = results.find((r) => r.playerId === 'p2')!
+    const other = results.find((r) => r.playerId === 'p3')!
+    expect(winner.playerId).toBe('p1')
+    expect(caller.score).toBe(-10) // 5 doubled
+    expect(other.score).toBe(-10) // KD = 10, not doubled
+    expect(winner.score).toBe(10 + 10)
+  })
+
+  it('does not penalize the caller when they correctly call the fight and win', () => {
+    const results = computeFightResults(
+      [
+        { playerId: 'p1', unmeldedCards: ['AS'] }, // called the fight and has the lowest hand
+        { playerId: 'p2', unmeldedCards: ['5H'] },
+        { playerId: 'p3', unmeldedCards: ['KD'] },
+      ],
+      'p1',
+    )
+    const winner = results.find((r) => r.isWinner)!
+    expect(winner.playerId).toBe('p1')
+    expect(winner.score).toBe(5 + 10)
+    expect(results.find((r) => r.playerId === 'p2')?.score).toBe(-5)
+  })
+
+  it('does not penalize a fight caller on a tie', () => {
+    const results = computeFightResults(
+      [
+        { playerId: 'p1', unmeldedCards: ['5H'] },
+        { playerId: 'p2', unmeldedCards: ['5S'] },
+        { playerId: 'p3', unmeldedCards: ['KD'] },
+      ],
+      'p1',
+    )
+    expect(results.every((r) => r.score === 0)).toBe(true)
+  })
 })

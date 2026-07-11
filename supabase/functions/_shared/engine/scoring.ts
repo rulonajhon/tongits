@@ -61,10 +61,15 @@ export function computeMeldOutResults(
 }
 
 /**
- * Fight (pile-exhaustion showdown): all hands reveal, lowest unmelded value wins.
- * A tie for lowest is a draw — no payouts.
+ * Fight (pile-exhaustion showdown, or a player-called challenge): all hands
+ * reveal, lowest unmelded value wins. A tie for lowest is a draw — no payouts.
+ *
+ * If `initiatorId` is set (a player called this fight themselves rather than
+ * the pile running out), and that player did NOT turn out to have the lowest
+ * hand, their payout is doubled — the real cost of a wrong call, which is
+ * what makes calling a fight a genuine gamble rather than a free action.
  */
-export function computeFightResults(players: PlayerHandValue[]): PlayerResult[] {
+export function computeFightResults(players: PlayerHandValue[], initiatorId?: string): PlayerResult[] {
   const values = players.map((p) => ({ playerId: p.playerId, value: handValue(p.unmeldedCards) }))
   const min = Math.min(...values.map((v) => v.value))
   const lowest = values.filter((v) => v.value === min)
@@ -85,13 +90,17 @@ export function computeFightResults(players: PlayerHandValue[]): PlayerResult[] 
 
   for (const v of values) {
     if (v.playerId === winnerId) continue
-    winnerTotal += v.value
+    const isFailedCaller = v.playerId === initiatorId
+    const payout = isFailedCaller ? v.value * 2 : v.value
+    winnerTotal += payout
     results.push({
       playerId: v.playerId,
-      score: -v.value,
+      score: -payout,
       isWinner: false,
       handValue: v.value,
-      breakdown: `Lost the fight — paid ${v.value}`,
+      breakdown: isFailedCaller
+        ? `Called a fight and lost — paid double (${payout})`
+        : `Lost the fight — paid ${payout}`,
     })
   }
 
@@ -100,7 +109,10 @@ export function computeFightResults(players: PlayerHandValue[]): PlayerResult[] 
     score: winnerTotal,
     isWinner: true,
     handValue: min,
-    breakdown: `Won the fight with lowest hand value (${min}). Collected ${winnerTotal}`,
+    breakdown:
+      initiatorId === winnerId
+        ? `Called the fight and won! Collected ${winnerTotal}`
+        : `Won the fight with lowest hand value (${min}). Collected ${winnerTotal}`,
   })
 
   return results

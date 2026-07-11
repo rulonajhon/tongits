@@ -44,7 +44,7 @@ export interface GameStateRow {
   endedAt: string | null
 }
 
-export type GameActionType = 'draw' | 'discard' | 'meld' | 'sapaw' | 'call_tongits'
+export type GameActionType = 'draw' | 'discard' | 'meld' | 'sapaw' | 'call_tongits' | 'call_fight'
 
 export interface DrawActionPayload {
   action: 'draw'
@@ -73,12 +73,17 @@ export interface CallTongitsActionPayload {
   melds: Array<{ type: MeldType; cards: CardCode[] } | { meldId: string; cards: CardCode[] }>
 }
 
+export interface CallFightActionPayload {
+  action: 'call_fight'
+}
+
 export type GameActionPayload =
   | DrawActionPayload
   | DiscardActionPayload
   | MeldActionPayload
   | SapawActionPayload
   | CallTongitsActionPayload
+  | CallFightActionPayload
 
 export interface PlayerResult {
   playerId: string

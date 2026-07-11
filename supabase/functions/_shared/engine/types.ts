@@ -45,6 +45,8 @@ export interface WinResult {
   winType: 'meld_out' | 'tongits' | 'fight' | 'draw'
   /** Per-player unmelded hand value at the moment the game ended, for scoring/display. */
   finalHands: Array<{ playerId: string; cards: CardCode[] }>
+  /** Set when winType is 'fight' and a player manually called it (vs. automatic pile exhaustion). */
+  fightInitiatorId?: string
 }
 
 export class EngineError extends Error {

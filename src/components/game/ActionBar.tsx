@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { useGameStore } from '@/stores/gameStore'
 import { useGameActions } from '@/hooks/useGameActions'
 import { isValidSapaw, isValidSet, isValidRun } from '@engine/melds'
@@ -14,7 +15,8 @@ export function ActionBar({ gameId, userId }: ActionBarProps) {
   const melds = useGameStore((s) => s.melds)
   const selectedCards = useGameStore((s) => s.selectedCards)
   const selectedMeldId = useGameStore((s) => s.selectedMeldId)
-  const { draw, discard, meld, sapaw, pendingAction } = useGameActions(gameId)
+  const { draw, discard, meld, sapaw, fight, pendingAction } = useGameActions(gameId)
+  const [confirmFight, setConfirmFight] = useState(false)
 
   const isYourTurn = game?.status === 'playing' && game.currentTurnPlayerId === userId
   const hasDrawn = Boolean(game?.hasDrawnThisTurn)
@@ -37,6 +39,7 @@ export function ActionBar({ gameId, userId }: ActionBarProps) {
   const canDiscard = isYourTurn && hasDrawn && selectedCards.length === 1 && !pendingAction
   const canMeld = isYourTurn && hasDrawn && meldCandidate !== null && !pendingAction
   const canSapaw = isYourTurn && hasDrawn && sapawCandidate && !pendingAction
+  const canFight = isYourTurn && hasDrawn && !pendingAction
 
   return (
     <div className="flex flex-col items-center gap-1.5 landscape:gap-1">
@@ -68,6 +71,16 @@ export function ActionBar({ gameId, userId }: ActionBarProps) {
         <Button
           pill
           size="lg"
+          variant="warning"
+          className="landscape:px-4 landscape:py-1.5 landscape:text-sm"
+          disabled={!canFight}
+          onClick={() => setConfirmFight(true)}
+        >
+          <span aria-hidden>⚔</span> Fight
+        </Button>
+        <Button
+          pill
+          size="lg"
           variant="danger"
           className="landscape:px-4 landscape:py-1.5 landscape:text-sm"
           disabled={!canDiscard}
@@ -78,8 +91,31 @@ export function ActionBar({ gameId, userId }: ActionBarProps) {
       </div>
       <p className="hidden max-w-xs text-center text-[11px] text-white/35 sm:block">
         Select 3+ cards of the same rank (set) or a same-suit run to Meld. Select a table meld, then hand cards
-        that extend it, to Sapaw. Select exactly one card to Discard. Emptying your hand wins automatically.
+        that extend it, to Sapaw. Select exactly one card to Discard. Call Fight to end the round now and compare
+        hands — if you don't have the lowest, you pay double.
       </p>
+
+      <Modal open={confirmFight} onClose={() => setConfirmFight(false)} title="Call a fight?">
+        <p className="text-sm text-white/70">
+          All hands reveal now. Lowest unmelded value wins. If you're not the lowest, you'll pay double for
+          calling it.
+        </p>
+        <div className="mt-4 flex gap-2">
+          <Button variant="secondary" className="flex-1" onClick={() => setConfirmFight(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="warning"
+            className="flex-1"
+            onClick={() => {
+              setConfirmFight(false)
+              fight()
+            }}
+          >
+            Fight!
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }

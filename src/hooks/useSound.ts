@@ -66,6 +66,14 @@ export function useSound() {
     [play],
   )
   const playError = useCallback(() => play([{ freq: 180, duration: 0.15, shape: 'square', gain: 0.08 }]), [play])
+  const playFight = useCallback(
+    () =>
+      play([
+        { freq: 200, duration: 0.09, shape: 'square', gain: 0.12 },
+        { freq: 150, duration: 0.14, shape: 'square', gain: 0.12, delay: 0.08 },
+      ]),
+    [play],
+  )
 
-  return { playDraw, playDiscard, playMeld, playTurn, playWin, playError }
+  return { playDraw, playDiscard, playMeld, playTurn, playWin, playError, playFight }
 }

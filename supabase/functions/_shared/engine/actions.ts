@@ -208,3 +208,21 @@ export function resolveFight(state: EngineGameState): WinResult {
     finalHands: values,
   }
 }
+
+/**
+ * A player-initiated challenge: instead of discarding, they call a fight on
+ * the spot. Same showdown as `resolveFight`, but tagged with who called it —
+ * the caller pays double if it turns out they didn't have the lowest hand
+ * (see scoring.computeFightResults), which is what keeps this a real gamble
+ * rather than a free action to spam every turn.
+ */
+export function applyFight(state: EngineGameState, playerId: string): ActionResult {
+  requireTurn(state, playerId)
+  if (!state.hasDrawnThisTurn) {
+    throw new EngineError('You must draw before calling a fight', 'must_draw_first')
+  }
+  const next = cloneState(state)
+  next.status = 'finished'
+  const win: WinResult = { ...resolveFight(next), fightInitiatorId: playerId }
+  return { state: next, win }
+}

@@ -46,17 +46,17 @@ export function WinnerModal({ userId }: { userId: string }) {
           {results.results.map((r) => {
             const player = players.find((p) => p.playerId === r.playerId)
             return (
-              <div
-                key={r.playerId}
-                className="flex items-center justify-between rounded-lg bg-ink-700 px-3 py-2 text-sm"
-              >
-                <span className="font-medium text-white">
-                  {player?.username ?? 'Player'} {r.playerId === userId && '(You)'}
-                </span>
-                <span className={r.score >= 0 ? 'text-emerald-400' : 'text-ruby-500'}>
-                  {r.score >= 0 ? '+' : ''}
-                  {r.score}
-                </span>
+              <div key={r.playerId} className="rounded-lg bg-ink-700 px-3 py-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-white">
+                    {player?.username ?? 'Player'} {r.playerId === userId && '(You)'}
+                  </span>
+                  <span className={r.score >= 0 ? 'text-emerald-400' : 'text-ruby-500'}>
+                    {r.score >= 0 ? '+' : ''}
+                    {r.score}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-left text-xs text-white/40">{r.breakdown}</p>
               </div>
             )
           })}

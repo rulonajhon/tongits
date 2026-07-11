@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyCallTongits, applyDiscard, applyDraw, applyMeld, applySapaw, resolveFight } from './actions.ts'
+import { applyCallTongits, applyDiscard, applyDraw, applyFight, applyMeld, applySapaw, resolveFight } from './actions.ts'
 import type { EngineGameState } from './types.ts'
 import { EngineError } from './types.ts'
 
@@ -272,5 +272,39 @@ describe('resolveFight', () => {
       { playerId: 'p2', cards: ['KD'] },
       { playerId: 'p3', cards: ['5H'] },
     ])
+  })
+})
+
+describe('applyFight', () => {
+  it('ends the game and tags the result with who called it', () => {
+    const state = makeState({
+      hasDrawnThisTurn: true,
+      hands: [
+        { playerId: 'p1', cards: ['AS'], hasDiscarded: false },
+        { playerId: 'p2', cards: ['KD'], hasDiscarded: false },
+        { playerId: 'p3', cards: ['5H'], hasDiscarded: false },
+      ],
+    })
+    const result = applyFight(state, 'p1')
+    expect(result.state.status).toBe('finished')
+    expect(result.win?.winType).toBe('fight')
+    expect(result.win?.fightInitiatorId).toBe('p1')
+    expect(result.win?.finalHands).toHaveLength(3)
+  })
+
+  it('rejects calling a fight out of turn', () => {
+    const state = makeState({ hasDrawnThisTurn: true })
+    expect(() => applyFight(state, 'p2')).toThrow(EngineError)
+  })
+
+  it('rejects calling a fight before drawing', () => {
+    const state = makeState({ hasDrawnThisTurn: false })
+    expect(() => applyFight(state, 'p1')).toThrow(/draw before/)
+  })
+
+  it('does not mutate the original state', () => {
+    const state = makeState({ hasDrawnThisTurn: true })
+    applyFight(state, 'p1')
+    expect(state.status).toBe('playing')
   })
 })
