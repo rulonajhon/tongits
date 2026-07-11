@@ -85,10 +85,10 @@ export function PlayingCard({ code, faceDown, selected, highlight = null, size =
       animate={{ y: selected ? -10 : 0, zIndex: selected ? 20 : 0 }}
       transition={{ type: 'spring', stiffness: 400, damping: 28 }}
       className={clsx(
-        'relative select-none rounded-md border bg-white shadow-md',
+        'relative select-none rounded-md border-2 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.5)]',
         sizeClasses[size],
         onClick ? 'cursor-pointer' : 'cursor-default',
-        selected ? 'ring-2 ring-gold-400 border-gold-400' : 'border-black/20',
+        selected ? 'ring-2 ring-gold-400 border-gold-400' : 'border-ink-900/70',
         !selected && highlight && highlightRing[highlight],
         (faceDown || !parsed) && 'bg-gradient-to-br from-felt-700 to-felt-900',
       )}

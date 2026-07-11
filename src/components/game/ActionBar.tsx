@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { useGameStore } from '@/stores/gameStore'
@@ -11,6 +11,36 @@ interface ActionBarProps {
   /** Draw happens by tapping the deck now — this renders the remaining
    *  actions split across the two sides flanking the hand. */
   side: 'left' | 'right'
+}
+
+interface ActionButtonProps {
+  icon: ReactNode
+  label: string
+  variant: 'success' | 'info' | 'warning' | 'danger'
+  disabled: boolean
+  onClick: () => void
+}
+
+// Fixed circle size with `!` overrides so the button can never balloon from
+// its own content (e.g. text wrapping) — the label lives outside the button
+// as plain text, not inside it, so it can't affect the button's dimensions.
+function ActionButton({ icon, label, variant, disabled, onClick }: ActionButtonProps) {
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <Button
+        pill
+        variant={variant}
+        disabled={disabled}
+        onClick={onClick}
+        className="!size-11 !p-0 landscape:!size-10"
+      >
+        <span aria-hidden className="text-lg leading-none landscape:text-base">
+          {icon}
+        </span>
+      </Button>
+      <span className="text-[9px] leading-none text-white/60">{label}</span>
+    </div>
+  )
 }
 
 export function ActionBar({ gameId, userId, side }: ActionBarProps) {
@@ -43,35 +73,38 @@ export function ActionBar({ gameId, userId, side }: ActionBarProps) {
   const canSapaw = isYourTurn && hasDrawn && sapawCandidate && !pendingAction
   const canFight = isYourTurn && hasDrawn && !pendingAction
 
-  const buttonClass = 'w-full flex-col gap-0.5 landscape:py-3 landscape:text-lg'
-  const iconClass = 'text-3xl leading-none landscape:text-2xl'
-
   if (side === 'left') {
     return (
-      <div className="flex flex-col items-center gap-2">
-        <Button pill size="xl" variant="success" className={buttonClass} disabled={!canMeld} onClick={() => meld(meldCandidate!, selectedCards)}>
-          <span aria-hidden className={iconClass}>✓</span>
-          Meld
-        </Button>
-        <Button pill size="xl" variant="info" className={buttonClass} disabled={!canSapaw} onClick={() => sapaw(selectedMeldId!, selectedCards)}>
-          <span aria-hidden className={iconClass}>+</span>
-          Sapaw
-        </Button>
+      <div className="flex flex-col items-center gap-1.5">
+        <ActionButton
+          icon="✓"
+          label="Meld"
+          variant="success"
+          disabled={!canMeld}
+          onClick={() => meld(meldCandidate!, selectedCards)}
+        />
+        <ActionButton
+          icon="+"
+          label="Sapaw"
+          variant="info"
+          disabled={!canSapaw}
+          onClick={() => sapaw(selectedMeldId!, selectedCards)}
+        />
       </div>
     )
   }
 
   return (
     <>
-      <div className="flex flex-col items-center gap-2">
-        <Button pill size="xl" variant="warning" className={buttonClass} disabled={!canFight} onClick={() => setConfirmFight(true)}>
-          <span aria-hidden className={iconClass}>⚔</span>
-          Fight
-        </Button>
-        <Button pill size="xl" variant="danger" className={buttonClass} disabled={!canDiscard} onClick={() => discard(selectedCards[0])}>
-          <span aria-hidden className={iconClass}>↑</span>
-          Discard
-        </Button>
+      <div className="flex flex-col items-center gap-1.5">
+        <ActionButton icon="⚔" label="Fight" variant="warning" disabled={!canFight} onClick={() => setConfirmFight(true)} />
+        <ActionButton
+          icon="↑"
+          label="Discard"
+          variant="danger"
+          disabled={!canDiscard}
+          onClick={() => discard(selectedCards[0])}
+        />
       </div>
 
       <Modal open={confirmFight} onClose={() => setConfirmFight(false)} title="Call a fight?">

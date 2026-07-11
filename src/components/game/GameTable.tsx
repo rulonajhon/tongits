@@ -66,14 +66,14 @@ export function GameTable({ gameId, userId }: GameTableProps) {
         </div>
       </div>
 
-      <div className="flex shrink-0 items-end gap-1.5 border-t border-white/5 bg-ink-900/50 px-1.5 pb-0.5 pt-0.5 landscape:gap-1 landscape:pb-0 landscape:pt-0">
-        <div className="w-28 shrink-0 landscape:w-24">
+      <div className="flex shrink-0 items-end gap-1 border-t border-white/5 bg-ink-900/50 px-1 pb-0.5 pt-0.5 landscape:pb-0 landscape:pt-0">
+        <div className="w-12 shrink-0 landscape:w-11">
           <ActionBar gameId={gameId} userId={userId} side="left" />
         </div>
         <div className="min-w-0 flex-1">
           <Hand interactive={isYourTurn} />
         </div>
-        <div className="w-28 shrink-0 landscape:w-24">
+        <div className="w-12 shrink-0 landscape:w-11">
           <ActionBar gameId={gameId} userId={userId} side="right" />
         </div>
       </div>
