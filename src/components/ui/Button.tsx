@@ -7,6 +7,8 @@ type Size = 'sm' | 'md' | 'lg'
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
   size?: Size
+  /** Rounds the button into a full pill shape instead of the size's default corner radius. */
+  pill?: boolean
   children: ReactNode
 }
 
@@ -24,13 +26,22 @@ const sizeClasses: Record<Size, string> = {
   lg: 'text-lg px-6 py-3 rounded-xl font-semibold',
 }
 
-export function Button({ variant = 'primary', size = 'md', className, children, disabled, ...rest }: ButtonProps) {
+export function Button({
+  variant = 'primary',
+  size = 'md',
+  pill = false,
+  className,
+  children,
+  disabled,
+  ...rest
+}: ButtonProps) {
   return (
     <button
       className={clsx(
         'inline-flex items-center justify-center gap-2 font-medium transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0',
         variantClasses[variant],
         sizeClasses[size],
+        pill && 'rounded-full',
         className,
       )}
       disabled={disabled}

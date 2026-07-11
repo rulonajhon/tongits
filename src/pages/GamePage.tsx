@@ -5,6 +5,7 @@ import { useGameChannel } from '@/hooks/useGameChannel'
 import { useGameStore } from '@/stores/gameStore'
 import { GameTable } from '@/components/game/GameTable'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { OrientationGuard } from '@/components/ui/OrientationGuard'
 
 export function GamePage() {
   const { gameId = '' } = useParams()
@@ -25,8 +26,10 @@ export function GamePage() {
   }
 
   return (
-    <div className="h-full min-h-screen">
-      <GameTable gameId={gameId} userId={userId} />
-    </div>
+    <OrientationGuard>
+      <div className="h-full min-h-screen">
+        <GameTable gameId={gameId} userId={userId} />
+      </div>
+    </OrientationGuard>
   )
 }

@@ -1,9 +1,8 @@
 import { useMemo } from 'react'
 import { Button } from '@/components/ui/Button'
 import { useGameStore } from '@/stores/gameStore'
-import { sendGameAction } from '@/services/supabase/games'
+import { useGameActions } from '@/hooks/useGameActions'
 import { isValidSapaw, isValidSet, isValidRun } from '@engine/melds'
-import { useSound } from '@/hooks/useSound'
 
 interface ActionBarProps {
   gameId: string
@@ -15,11 +14,7 @@ export function ActionBar({ gameId, userId }: ActionBarProps) {
   const melds = useGameStore((s) => s.melds)
   const selectedCards = useGameStore((s) => s.selectedCards)
   const selectedMeldId = useGameStore((s) => s.selectedMeldId)
-  const pendingAction = useGameStore((s) => s.pendingAction)
-  const setPendingAction = useGameStore((s) => s.setPendingAction)
-  const setActionError = useGameStore((s) => s.setActionError)
-  const clearSelection = useGameStore((s) => s.clearSelection)
-  const { playDraw, playDiscard, playMeld, playError } = useSound()
+  const { draw, discard, meld, sapaw, pendingAction } = useGameActions(gameId)
 
   const isYourTurn = game?.status === 'playing' && game.currentTurnPlayerId === userId
   const hasDrawn = Boolean(game?.hasDrawnThisTurn)
@@ -38,72 +33,50 @@ export function ActionBar({ gameId, userId }: ActionBarProps) {
     return isValidSapaw(target.type, target.cards, selectedCards).valid
   }, [selectedMeldId, selectedCards, melds])
 
-  async function run(action: () => Promise<unknown>, onSuccess?: () => void) {
-    setPendingAction(true)
-    setActionError(null)
-    try {
-      await action()
-      onSuccess?.()
-      clearSelection()
-    } catch (err) {
-      playError()
-      setActionError(err instanceof Error ? err.message : 'Action failed')
-    } finally {
-      setPendingAction(false)
-    }
-  }
-
   const canDraw = isYourTurn && !hasDrawn && !pendingAction
   const canDiscard = isYourTurn && hasDrawn && selectedCards.length === 1 && !pendingAction
   const canMeld = isYourTurn && hasDrawn && meldCandidate !== null && !pendingAction
   const canSapaw = isYourTurn && hasDrawn && sapawCandidate && !pendingAction
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-1.5 landscape:gap-1">
       {!isYourTurn && <p className="text-xs text-white/40">Waiting for your turn…</p>}
       <div className="flex flex-wrap justify-center gap-2">
-        <Button
-          variant="primary"
-          disabled={!canDraw}
-          onClick={() => run(() => sendGameAction(gameId, { action: 'draw' }), playDraw)}
-        >
-          Draw
+        <Button pill size="lg" className="landscape:px-4 landscape:py-1.5 landscape:text-sm" disabled={!canDraw} onClick={draw}>
+          <span aria-hidden>↓</span> Draw
         </Button>
         <Button
+          pill
+          size="lg"
           variant="secondary"
+          className="landscape:px-4 landscape:py-1.5 landscape:text-sm"
           disabled={!canMeld}
-          onClick={() =>
-            run(
-              () => sendGameAction(gameId, { action: 'meld', type: meldCandidate!, cards: selectedCards }),
-              playMeld,
-            )
-          }
+          onClick={() => meld(meldCandidate!, selectedCards)}
         >
-          Meld
+          <span aria-hidden>✓</span> Meld
         </Button>
         <Button
+          pill
+          size="lg"
           variant="secondary"
+          className="landscape:px-4 landscape:py-1.5 landscape:text-sm"
           disabled={!canSapaw}
-          onClick={() =>
-            run(
-              () => sendGameAction(gameId, { action: 'sapaw', meldId: selectedMeldId!, cards: selectedCards }),
-              playMeld,
-            )
-          }
+          onClick={() => sapaw(selectedMeldId!, selectedCards)}
         >
-          Sapaw
+          <span aria-hidden>+</span> Sapaw
         </Button>
         <Button
+          pill
+          size="lg"
           variant="danger"
+          className="landscape:px-4 landscape:py-1.5 landscape:text-sm"
           disabled={!canDiscard}
-          onClick={() =>
-            run(() => sendGameAction(gameId, { action: 'discard', card: selectedCards[0] }), playDiscard)
-          }
+          onClick={() => discard(selectedCards[0])}
         >
-          Discard
+          <span aria-hidden>↑</span> Discard
         </Button>
       </div>
-      <p className="max-w-xs text-center text-[11px] text-white/35">
+      <p className="hidden max-w-xs text-center text-[11px] text-white/35 sm:block">
         Select 3+ cards of the same rank (set) or a same-suit run to Meld. Select a table meld, then hand cards
         that extend it, to Sapaw. Select exactly one card to Discard. Emptying your hand wins automatically.
       </p>

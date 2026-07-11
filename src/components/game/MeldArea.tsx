@@ -28,10 +28,21 @@ export function MeldArea({ melds, players, selectedMeldId, onSelectMeld }: MeldA
             <span className="text-xs text-white/50">{owner?.username ?? 'Player'}</span>
             <div className="flex gap-2">
               {ownerMelds.map((meld) => (
-                <button
+                <div
                   key={meld.id}
-                  type="button"
+                  role="button"
+                  tabIndex={onSelectMeld ? 0 : -1}
                   onClick={onSelectMeld ? () => onSelectMeld(meld.id) : undefined}
+                  onKeyDown={
+                    onSelectMeld
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            onSelectMeld(meld.id)
+                          }
+                        }
+                      : undefined
+                  }
                   className={clsx(
                     'flex gap-0.5 rounded-md p-1 transition-colors',
                     onSelectMeld && 'cursor-pointer hover:bg-white/5',
@@ -41,7 +52,7 @@ export function MeldArea({ melds, players, selectedMeldId, onSelectMeld }: MeldA
                   {meld.cards.map((code) => (
                     <PlayingCard key={code} code={code} size="sm" />
                   ))}
-                </button>
+                </div>
               ))}
             </div>
           </div>
