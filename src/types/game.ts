@@ -42,9 +42,18 @@ export interface GameStateRow {
   winType: WinType | null
   startedAt: string
   endedAt: string | null
+  /** When the current draw/discard phase expires — see useTurnTimer. */
+  turnDeadline: string | null
 }
 
-export type GameActionType = 'draw' | 'discard' | 'meld' | 'sapaw' | 'call_tongits' | 'call_fight'
+export type GameActionType =
+  | 'draw'
+  | 'discard'
+  | 'meld'
+  | 'sapaw'
+  | 'call_tongits'
+  | 'call_fight'
+  | 'claim_timeout'
 
 export interface DrawActionPayload {
   action: 'draw'
@@ -77,6 +86,10 @@ export interface CallFightActionPayload {
   action: 'call_fight'
 }
 
+export interface ClaimTimeoutActionPayload {
+  action: 'claim_timeout'
+}
+
 export type GameActionPayload =
   | DrawActionPayload
   | DiscardActionPayload
@@ -84,6 +97,7 @@ export type GameActionPayload =
   | SapawActionPayload
   | CallTongitsActionPayload
   | CallFightActionPayload
+  | ClaimTimeoutActionPayload
 
 export interface PlayerResult {
   playerId: string

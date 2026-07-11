@@ -11,6 +11,7 @@ import {
   computeFightResults,
   computeMeldOutResults,
   EngineError,
+  pickAutoDiscard,
   resolveFight,
   type CallTongitsMeldOp,
   type CardCode,
@@ -20,9 +21,11 @@ import {
   type WinResult,
 } from '../_shared/engine/index.ts'
 
+const TURN_SECONDS = 30
+
 interface RequestBody {
   gameId: string
-  action: 'draw' | 'discard' | 'meld' | 'sapaw' | 'call_tongits' | 'call_fight'
+  action: 'draw' | 'discard' | 'meld' | 'sapaw' | 'call_tongits' | 'call_fight' | 'claim_timeout'
   card?: CardCode
   type?: MeldType
   cards?: CardCode[]
@@ -49,6 +52,10 @@ function handCountsPatch(state: EngineGameState) {
   return state.hands.map((h) => ({ player_id: h.playerId, hand_count: h.cards.length }))
 }
 
+function nextDeadline(): string {
+  return new Date(Date.now() + TURN_SECONDS * 1000).toISOString()
+}
+
 /** Builds the `game` + `results` patch fragments for an action that just produced a win. */
 function winPatch(win: WinResult) {
   const { results, winnerId, winType } = resultsPatch(win)
@@ -58,6 +65,7 @@ function winPatch(win: WinResult) {
       ended_at: new Date().toISOString(),
       winner_id: winnerId,
       win_type: winType,
+      turn_deadline: null,
     },
     results,
   }
@@ -91,6 +99,70 @@ function resultsPatch(win: WinResult) {
     })),
     winnerId: win.winnerId,
     winType: win.winType,
+  }
+}
+
+/** Shared by the manual 'draw' action and the auto-draw path of 'claim_timeout'. */
+function buildDrawPatch(state: EngineGameState, playerId: string) {
+  const result = applyDraw(state, playerId)
+  return {
+    patch: {
+      game: {
+        deck: result.state.deck,
+        has_drawn_this_turn: true,
+        turn_deadline: nextDeadline(),
+      },
+      hands: [{ player_id: playerId, cards: result.state.hands.find((h) => h.playerId === playerId)!.cards }],
+      hand_counts: handCountsPatch(result.state),
+      move: { player_id: playerId, action: 'draw', payload: {} },
+    },
+    drawnCard: result.drawnCard,
+  }
+}
+
+/** Shared by the manual 'discard' action and the auto-discard path of 'claim_timeout'. */
+function buildDiscardPatch(
+  state: EngineGameState,
+  playerId: string,
+  card: CardCode,
+  currentTurnNumber: number,
+  auto: boolean,
+) {
+  const result = applyDiscard(state, playerId, card)
+
+  if (result.state.deck.length === 0) {
+    const fightWin = resolveFight(result.state)
+    const { results, winnerId, winType } = resultsPatch(fightWin)
+    return {
+      game: {
+        status: 'finished',
+        discard_pile: result.state.discardPile,
+        has_drawn_this_turn: false,
+        winner_id: winnerId,
+        win_type: winType,
+        ended_at: new Date().toISOString(),
+        turn_deadline: null,
+      },
+      hands: [{ player_id: playerId, cards: result.state.hands.find((h) => h.playerId === playerId)!.cards }],
+      hand_counts: handCountsPatch(result.state),
+      discarded_players: [playerId],
+      move: { player_id: playerId, action: 'discard', payload: { card, auto } },
+      results,
+    }
+  }
+
+  return {
+    game: {
+      current_turn_player_id: result.state.currentTurnPlayerId,
+      turn_number: currentTurnNumber + 1,
+      discard_pile: result.state.discardPile,
+      has_drawn_this_turn: false,
+      turn_deadline: nextDeadline(),
+    },
+    hands: [{ player_id: playerId, cards: result.state.hands.find((h) => h.playerId === playerId)!.cards }],
+    hand_counts: handCountsPatch(result.state),
+    discarded_players: [playerId],
+    move: { player_id: playerId, action: 'discard', payload: { card, auto } },
   }
 }
 
@@ -159,56 +231,15 @@ Deno.serve(async (req) => {
     try {
       switch (body.action) {
         case 'draw': {
-          const result = applyDraw(state, userId)
-          patch = {
-            game: {
-              deck: result.state.deck,
-              has_drawn_this_turn: true,
-            },
-            hands: [{ player_id: userId, cards: result.state.hands.find((h) => h.playerId === userId)!.cards }],
-            hand_counts: handCountsPatch(result.state),
-            move: { player_id: userId, action: 'draw', payload: {} },
-          }
-          responseExtra = { drawnCard: result.drawnCard }
+          const { patch: drawPatch, drawnCard } = buildDrawPatch(state, userId)
+          patch = drawPatch
+          responseExtra = { drawnCard }
           break
         }
 
         case 'discard': {
           if (!body.card) return errorResponse('card is required', 400)
-          const result = applyDiscard(state, userId, body.card)
-
-          if (result.state.deck.length === 0) {
-            const fightWin = resolveFight(result.state)
-            const { results, winnerId, winType } = resultsPatch(fightWin)
-            patch = {
-              game: {
-                status: 'finished',
-                discard_pile: result.state.discardPile,
-                has_drawn_this_turn: false,
-                winner_id: winnerId,
-                win_type: winType,
-                ended_at: new Date().toISOString(),
-              },
-              hands: [{ player_id: userId, cards: result.state.hands.find((h) => h.playerId === userId)!.cards }],
-              hand_counts: handCountsPatch(result.state),
-              discarded_players: [userId],
-              move: { player_id: userId, action: 'discard', payload: { card: body.card } },
-              results,
-            }
-          } else {
-            patch = {
-              game: {
-                current_turn_player_id: result.state.currentTurnPlayerId,
-                turn_number: game.turn_number + 1,
-                discard_pile: result.state.discardPile,
-                has_drawn_this_turn: false,
-              },
-              hands: [{ player_id: userId, cards: result.state.hands.find((h) => h.playerId === userId)!.cards }],
-              hand_counts: handCountsPatch(result.state),
-              discarded_players: [userId],
-              move: { player_id: userId, action: 'discard', payload: { card: body.card } },
-            }
-          }
+          patch = buildDiscardPatch(state, userId, body.card, game.turn_number, false)
           break
         }
 
@@ -272,6 +303,25 @@ Deno.serve(async (req) => {
             hand_counts: handCountsPatch(result.state),
             move: { player_id: userId, action: 'call_fight', payload: {} },
             results: win.results,
+          }
+          break
+        }
+
+        case 'claim_timeout': {
+          if (state.status !== 'playing') return errorResponse('Game is not active', 400)
+          if (!game.turn_deadline) return errorResponse('No deadline set for this turn', 400)
+          if (new Date(game.turn_deadline).getTime() > Date.now()) {
+            return errorResponse('The turn has not timed out yet', 400, 'not_timed_out')
+          }
+
+          const currentPlayerId = state.currentTurnPlayerId
+          if (!state.hasDrawnThisTurn) {
+            const { patch: drawPatch } = buildDrawPatch(state, currentPlayerId)
+            patch = drawPatch
+          } else {
+            const hand = state.hands.find((h) => h.playerId === currentPlayerId)!
+            const card = pickAutoDiscard(hand.cards)
+            patch = buildDiscardPatch(state, currentPlayerId, card, game.turn_number, true)
           }
           break
         }

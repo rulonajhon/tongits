@@ -55,6 +55,7 @@ export async function fetchGame(gameId: string): Promise<GameStateRow> {
     winType: data.win_type,
     startedAt: data.started_at,
     endedAt: data.ended_at,
+    turnDeadline: data.turn_deadline,
   }
 }
 

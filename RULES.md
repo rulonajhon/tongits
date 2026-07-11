@@ -32,6 +32,18 @@ On your turn:
 - **Sapaw**: the combined cards (existing meld + what you're adding) must
   still form a valid set or run.
 
+## Turn timer
+
+Each phase of your turn has its own **30-second clock**: 30s to draw, then a
+fresh 30s to discard (or call Fight) once you've drawn. Melding/sapaw-ing
+doesn't reset the clock — they just happen within your current 30s window.
+
+If a phase's timer runs out, the server acts for you automatically: it draws
+on your behalf, or discards a card for you (preferring an unpaired card with
+the highest point value — the least useful one to keep). This is enforced
+server-side against the real deadline stored on the game row, not a
+client-side clock, so it can't be gamed by a fast or slow client.
+
 ## Winning
 
 - **Meld-out win**: your hand reaches zero cards during your turn (via

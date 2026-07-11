@@ -5,6 +5,7 @@ import { DrawPile } from './DrawPile'
 import { DiscardPile } from './DiscardPile'
 import { MeldArea } from './MeldArea'
 import { TurnIndicator } from './TurnIndicator'
+import { TurnTimer } from './TurnTimer'
 import { Hand } from './Hand'
 import { ActionBar } from './ActionBar'
 import { WinnerModal } from './WinnerModal'
@@ -34,8 +35,9 @@ export function GameTable({ gameId, userId }: GameTableProps) {
 
   return (
     <div className="flex h-full min-h-screen flex-col overflow-y-auto bg-ink-800 landscape:h-screen">
-      <div className="flex shrink-0 items-center justify-center py-0.5 landscape:py-0">
+      <div className="flex shrink-0 items-center justify-center gap-2 py-0.5 landscape:py-0">
         <TurnIndicator isYourTurn={isYourTurn} currentPlayerName={currentPlayer?.username ?? '…'} />
+        <TurnTimer gameId={gameId} />
       </div>
 
       <div className="relative mx-auto mt-0.5 w-[96%] max-w-5xl flex-1 landscape:min-h-0">

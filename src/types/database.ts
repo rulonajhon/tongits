@@ -99,6 +99,7 @@ export interface Database {
           win_type: 'meld_out' | 'tongits' | 'fight' | 'draw' | null
           started_at: string
           ended_at: string | null
+          turn_deadline: string | null
         }
         Insert: {
           id?: string
@@ -115,6 +116,7 @@ export interface Database {
           win_type?: 'meld_out' | 'tongits' | 'fight' | 'draw' | null
           started_at?: string
           ended_at?: string | null
+          turn_deadline?: string | null
         }
         Update: Partial<Database['public']['Tables']['games']['Insert']>
         Relationships: []
