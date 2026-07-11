@@ -8,14 +8,17 @@ import { isValidSapaw, isValidSet, isValidRun } from '@engine/melds'
 interface ActionBarProps {
   gameId: string
   userId: string
+  /** Draw happens by tapping the deck now — this renders the remaining
+   *  actions split across the two sides flanking the hand. */
+  side: 'left' | 'right'
 }
 
-export function ActionBar({ gameId, userId }: ActionBarProps) {
+export function ActionBar({ gameId, userId, side }: ActionBarProps) {
   const game = useGameStore((s) => s.game)
   const melds = useGameStore((s) => s.melds)
   const selectedCards = useGameStore((s) => s.selectedCards)
   const selectedMeldId = useGameStore((s) => s.selectedMeldId)
-  const { draw, discard, meld, sapaw, fight, pendingAction } = useGameActions(gameId)
+  const { discard, meld, sapaw, fight, pendingAction } = useGameActions(gameId)
   const [confirmFight, setConfirmFight] = useState(false)
 
   const isYourTurn = game?.status === 'playing' && game.currentTurnPlayerId === userId
@@ -35,65 +38,36 @@ export function ActionBar({ gameId, userId }: ActionBarProps) {
     return isValidSapaw(target.type, target.cards, selectedCards).valid
   }, [selectedMeldId, selectedCards, melds])
 
-  const canDraw = isYourTurn && !hasDrawn && !pendingAction
   const canDiscard = isYourTurn && hasDrawn && selectedCards.length === 1 && !pendingAction
   const canMeld = isYourTurn && hasDrawn && meldCandidate !== null && !pendingAction
   const canSapaw = isYourTurn && hasDrawn && sapawCandidate && !pendingAction
   const canFight = isYourTurn && hasDrawn && !pendingAction
 
-  return (
-    <div className="flex flex-col items-center gap-1.5 landscape:gap-1">
-      {!isYourTurn && <p className="text-xs text-white/40">Waiting for your turn…</p>}
-      <div className="flex flex-wrap justify-center gap-2">
-        <Button pill size="lg" className="landscape:px-4 landscape:py-1.5 landscape:text-sm" disabled={!canDraw} onClick={draw}>
-          <span aria-hidden>↓</span> Draw
-        </Button>
-        <Button
-          pill
-          size="lg"
-          variant="secondary"
-          className="landscape:px-4 landscape:py-1.5 landscape:text-sm"
-          disabled={!canMeld}
-          onClick={() => meld(meldCandidate!, selectedCards)}
-        >
+  const buttonClass = 'landscape:px-3 landscape:py-1.5 landscape:text-sm w-full'
+
+  if (side === 'left') {
+    return (
+      <div className="flex flex-col items-center gap-2">
+        <Button pill size="md" variant="secondary" className={buttonClass} disabled={!canMeld} onClick={() => meld(meldCandidate!, selectedCards)}>
           <span aria-hidden>✓</span> Meld
         </Button>
-        <Button
-          pill
-          size="lg"
-          variant="secondary"
-          className="landscape:px-4 landscape:py-1.5 landscape:text-sm"
-          disabled={!canSapaw}
-          onClick={() => sapaw(selectedMeldId!, selectedCards)}
-        >
+        <Button pill size="md" variant="secondary" className={buttonClass} disabled={!canSapaw} onClick={() => sapaw(selectedMeldId!, selectedCards)}>
           <span aria-hidden>+</span> Sapaw
         </Button>
-        <Button
-          pill
-          size="lg"
-          variant="warning"
-          className="landscape:px-4 landscape:py-1.5 landscape:text-sm"
-          disabled={!canFight}
-          onClick={() => setConfirmFight(true)}
-        >
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div className="flex flex-col items-center gap-2">
+        <Button pill size="md" variant="warning" className={buttonClass} disabled={!canFight} onClick={() => setConfirmFight(true)}>
           <span aria-hidden>⚔</span> Fight
         </Button>
-        <Button
-          pill
-          size="lg"
-          variant="danger"
-          className="landscape:px-4 landscape:py-1.5 landscape:text-sm"
-          disabled={!canDiscard}
-          onClick={() => discard(selectedCards[0])}
-        >
+        <Button pill size="md" variant="danger" className={buttonClass} disabled={!canDiscard} onClick={() => discard(selectedCards[0])}>
           <span aria-hidden>↑</span> Discard
         </Button>
       </div>
-      <p className="hidden max-w-xs text-center text-[11px] text-white/35 sm:block landscape:hidden">
-        Select 3+ cards of the same rank (set) or a same-suit run to Meld. Select a table meld, then hand cards
-        that extend it, to Sapaw. Select exactly one card to Discard. Call Fight to end the round now and compare
-        hands — if you don't have the lowest, you pay double.
-      </p>
 
       <Modal open={confirmFight} onClose={() => setConfirmFight(false)} title="Call a fight?">
         <p className="text-sm text-white/70">
@@ -116,6 +90,6 @@ export function ActionBar({ gameId, userId }: ActionBarProps) {
           </Button>
         </div>
       </Modal>
-    </div>
+    </>
   )
 }

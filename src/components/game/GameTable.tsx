@@ -33,13 +33,13 @@ export function GameTable({ gameId, userId }: GameTableProps) {
   const canDrawFromPile = isYourTurn && !game.hasDrawnThisTurn && !pendingAction
 
   return (
-    <div className="flex h-full min-h-screen flex-col overflow-y-auto bg-ink-950 landscape:h-screen">
+    <div className="flex h-full min-h-screen flex-col overflow-y-auto bg-ink-800 landscape:h-screen">
       <div className="flex shrink-0 items-center justify-center px-3 py-1 landscape:py-0.5">
         <TurnIndicator isYourTurn={isYourTurn} currentPlayerName={currentPlayer?.username ?? '…'} />
       </div>
 
       <div className="relative mx-auto mt-1 w-[96%] max-w-5xl flex-1 landscape:min-h-0">
-        <div className="absolute inset-0 rounded-t-[3rem] border-4 border-amber-800/80 bg-gradient-to-b from-felt-600 via-felt-700 to-felt-900 shadow-2xl [clip-path:polygon(7%_0%,93%_0%,100%_100%,0%_100%)]" />
+        <div className="absolute inset-0 rounded-t-[3rem] border-4 border-amber-800/80 bg-gradient-to-b from-felt-500 via-felt-600 to-felt-800 shadow-2xl [clip-path:polygon(7%_0%,93%_0%,100%_100%,0%_100%)]" />
 
         {/* overflow-y-auto: if opponents + piles + melds ever need more height
             than this box has (e.g. many melds on the table, or a short
@@ -62,15 +62,22 @@ export function GameTable({ gameId, userId }: GameTableProps) {
             )}
           </div>
 
-          <div className="w-full shrink-0 rounded-xl bg-black/15 p-1">
+          <div className="w-full shrink-0 rounded-xl bg-black/10 p-1">
             <MeldArea melds={melds} players={players} selectedMeldId={selectedMeldId} onSelectMeld={selectMeld} />
           </div>
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-white/5 bg-black/30 pb-1.5 pt-1 landscape:pb-1 landscape:pt-0.5">
-        <Hand interactive={isYourTurn} />
-        <ActionBar gameId={gameId} userId={userId} />
+      <div className="flex shrink-0 items-center gap-2 border-t border-white/5 bg-ink-900/50 px-2 pb-1 pt-0.5 landscape:gap-1.5 landscape:pb-0.5">
+        <div className="w-20 shrink-0 landscape:w-16">
+          <ActionBar gameId={gameId} userId={userId} side="left" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <Hand interactive={isYourTurn} />
+        </div>
+        <div className="w-20 shrink-0 landscape:w-16">
+          <ActionBar gameId={gameId} userId={userId} side="right" />
+        </div>
       </div>
 
       <WinnerModal userId={userId} />

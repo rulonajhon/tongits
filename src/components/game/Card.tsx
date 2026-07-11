@@ -54,18 +54,19 @@ function FaceIcon({ rank, colorClass }: { rank: 'J' | 'Q' | 'K'; colorClass: str
 }
 
 // Deliberately minimal: one big rank + one suit symbol, nothing else — no
-// pip grids, no corner indices. Matches the reference look and stays
-// legible at a glance even when cards overlap in a fanned hand.
+// pip grids, no corner indices. Anchored to the upper-left corner (rather
+// than centered) so the rank stays readable even when the hand overlaps
+// cards — only the right edge of each card gets covered by its neighbor.
 function CardFace({ rank, suit, red }: { rank: Rank; suit: ReturnType<typeof parseCardCode>['suit']; red: boolean }) {
   const colorClass = red ? 'text-ruby-500' : 'text-ink-900'
   const symbol = suitSymbol(suit)
   const isFace = rank === 'J' || rank === 'Q' || rank === 'K'
 
   return (
-    <div className={clsx('absolute inset-0 flex flex-col items-center justify-center gap-1', colorClass)}>
+    <div className={clsx('absolute inset-0 flex flex-col items-start gap-0.5 p-1.5', colorClass)}>
+      <span className="text-[1.6em] font-black leading-none">{rank}</span>
+      <span className="text-[1em] leading-none">{symbol}</span>
       {isFace && <FaceIcon rank={rank} colorClass={colorClass} />}
-      <span className="text-[1.7em] font-black leading-none">{rank}</span>
-      <span className="text-[1.1em] leading-none">{symbol}</span>
     </div>
   )
 }
@@ -79,9 +80,9 @@ export function PlayingCard({ code, faceDown, selected, highlight = null, size =
       type="button"
       layoutId={layoutId}
       onClick={onClick}
-      whileHover={onClick ? { y: -6 } : undefined}
+      whileHover={onClick ? { y: -6, zIndex: 30 } : undefined}
       whileTap={onClick ? { scale: 0.96 } : undefined}
-      animate={{ y: selected ? -10 : 0 }}
+      animate={{ y: selected ? -10 : 0, zIndex: selected ? 20 : 0 }}
       transition={{ type: 'spring', stiffness: 400, damping: 28 }}
       className={clsx(
         'relative select-none rounded-md border bg-white shadow-md',
