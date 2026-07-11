@@ -25,7 +25,7 @@ export function Hand({ interactive }: HandProps) {
       // Overlap cards within a group (skip the first) — the rank is anchored
       // to each card's upper-left corner specifically so it stays readable
       // even with its right edge covered by the next card.
-      <div key={code} className={clsx(indexInGroup > 0 && '-ml-12 landscape:-ml-8')}>
+      <div key={code} className={clsx(indexInGroup > 0 && '-ml-14 landscape:-ml-10')}>
         <PlayingCard
           code={code}
           layoutId={`hand-${code}`}
@@ -45,7 +45,7 @@ export function Hand({ interactive }: HandProps) {
     // justify-content). When the hand fits, margins split evenly and it's
     // centered. When it doesn't, block auto-margins resolve to 0 instead of
     // negative — the hand just starts flush left, fully reachable by scroll.
-    <div className="overflow-x-auto overflow-y-hidden px-2 py-1 landscape:py-0.5">
+    <div className="overflow-x-auto overflow-y-hidden px-2 py-0.5 landscape:py-0">
       <div className="mx-auto flex w-max items-end gap-x-3 landscape:gap-x-2">
         <AnimatePresence initial={false}>
           {groups.map((group) => (

@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { clsx } from 'clsx'
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'warning' | 'success' | 'info' | 'ghost'
-type Size = 'sm' | 'md' | 'lg'
+type Size = 'sm' | 'md' | 'lg' | 'xl'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
@@ -31,6 +31,7 @@ const sizeClasses: Record<Size, string> = {
   sm: 'text-sm px-3 py-1.5 rounded-md',
   md: 'text-base px-4 py-2 rounded-lg',
   lg: 'text-lg px-6 py-3 rounded-xl font-semibold',
+  xl: 'text-xl px-7 py-4 rounded-2xl font-bold',
 }
 
 export function Button({

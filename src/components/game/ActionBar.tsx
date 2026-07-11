@@ -43,17 +43,18 @@ export function ActionBar({ gameId, userId, side }: ActionBarProps) {
   const canSapaw = isYourTurn && hasDrawn && sapawCandidate && !pendingAction
   const canFight = isYourTurn && hasDrawn && !pendingAction
 
-  const buttonClass = 'w-full flex-col gap-0.5 landscape:py-2 landscape:text-base'
+  const buttonClass = 'w-full flex-col gap-0.5 landscape:py-3 landscape:text-lg'
+  const iconClass = 'text-3xl leading-none landscape:text-2xl'
 
   if (side === 'left') {
     return (
-      <div className="flex flex-col items-center gap-3">
-        <Button pill size="lg" variant="success" className={buttonClass} disabled={!canMeld} onClick={() => meld(meldCandidate!, selectedCards)}>
-          <span aria-hidden className="text-2xl leading-none">✓</span>
+      <div className="flex flex-col items-center gap-2">
+        <Button pill size="xl" variant="success" className={buttonClass} disabled={!canMeld} onClick={() => meld(meldCandidate!, selectedCards)}>
+          <span aria-hidden className={iconClass}>✓</span>
           Meld
         </Button>
-        <Button pill size="lg" variant="info" className={buttonClass} disabled={!canSapaw} onClick={() => sapaw(selectedMeldId!, selectedCards)}>
-          <span aria-hidden className="text-2xl leading-none">+</span>
+        <Button pill size="xl" variant="info" className={buttonClass} disabled={!canSapaw} onClick={() => sapaw(selectedMeldId!, selectedCards)}>
+          <span aria-hidden className={iconClass}>+</span>
           Sapaw
         </Button>
       </div>
@@ -62,13 +63,13 @@ export function ActionBar({ gameId, userId, side }: ActionBarProps) {
 
   return (
     <>
-      <div className="flex flex-col items-center gap-3">
-        <Button pill size="lg" variant="warning" className={buttonClass} disabled={!canFight} onClick={() => setConfirmFight(true)}>
-          <span aria-hidden className="text-2xl leading-none">⚔</span>
+      <div className="flex flex-col items-center gap-2">
+        <Button pill size="xl" variant="warning" className={buttonClass} disabled={!canFight} onClick={() => setConfirmFight(true)}>
+          <span aria-hidden className={iconClass}>⚔</span>
           Fight
         </Button>
-        <Button pill size="lg" variant="danger" className={buttonClass} disabled={!canDiscard} onClick={() => discard(selectedCards[0])}>
-          <span aria-hidden className="text-2xl leading-none">↑</span>
+        <Button pill size="xl" variant="danger" className={buttonClass} disabled={!canDiscard} onClick={() => discard(selectedCards[0])}>
+          <span aria-hidden className={iconClass}>↑</span>
           Discard
         </Button>
       </div>

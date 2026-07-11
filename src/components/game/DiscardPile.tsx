@@ -28,14 +28,14 @@ export function DiscardPile({ cards }: DiscardPileProps) {
               }
             : undefined
         }
-        className={clsx('flex flex-col items-center gap-1.5', cards.length > 0 && 'cursor-pointer')}
+        className={clsx('flex flex-col items-center gap-0.5', cards.length > 0 && 'cursor-pointer')}
       >
         {top ? (
           <PlayingCard code={top} size="md" layoutId={`discard-${top}`} />
         ) : (
           <div className="h-23 w-16 rounded-md border border-dashed border-white/20 landscape:h-20 landscape:w-14" />
         )}
-        <span className="text-xs text-white/50">
+        <span className="text-[10px] leading-none text-white/50">
           Discard{cards.length > 0 ? ` (${cards.length}) — tap to view` : ''}
         </span>
       </div>

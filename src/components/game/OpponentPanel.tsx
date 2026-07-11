@@ -10,7 +10,7 @@ interface OpponentPanelProps {
 
 export function OpponentPanel({ player, isCurrentTurn, side }: OpponentPanelProps) {
   return (
-    <div className={clsx('flex flex-col items-center gap-1', side === 'left' ? 'items-start' : 'items-end')}>
+    <div className={clsx('flex flex-col items-center gap-0.5', side === 'left' ? 'items-start' : 'items-end')}>
       <div className="relative">
         <Avatar username={player.username} avatarUrl={player.avatarUrl} size="md" online={player.isConnected} />
         <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-ink-900 bg-sapphire-500 px-1 text-[10px] font-bold text-white">

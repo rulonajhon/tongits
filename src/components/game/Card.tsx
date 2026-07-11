@@ -18,7 +18,7 @@ interface CardProps {
 const sizeClasses = {
   sm: 'w-10 h-14 text-base',
   md: 'w-16 h-23 text-xl landscape:w-14 landscape:h-20 landscape:text-lg',
-  lg: 'w-24 h-34 text-2xl landscape:w-17 landscape:h-24 landscape:text-xl',
+  lg: 'w-24 h-34 text-2xl landscape:w-16 landscape:h-20 landscape:text-lg',
 }
 
 const highlightRing: Record<Exclude<CardHighlight, null>, string> = {

@@ -20,13 +20,13 @@ export function MeldArea({ melds, players, selectedMeldId, onSelectMeld }: MeldA
   }
 
   return (
-    <div className="flex flex-wrap justify-center gap-4 py-2">
+    <div className="flex flex-wrap justify-center gap-3 py-0.5">
       {[...byOwner.entries()].map(([ownerId, ownerMelds]) => {
         const owner = players.find((p) => p.playerId === ownerId)
         return (
-          <div key={ownerId} className="flex flex-col items-center gap-1">
-            <span className="text-xs text-white/50">{owner?.username ?? 'Player'}</span>
-            <div className="flex gap-2">
+          <div key={ownerId} className="flex flex-col items-center gap-0.5">
+            <span className="text-[10px] leading-none text-white/50">{owner?.username ?? 'Player'}</span>
+            <div className="flex gap-1.5">
               {ownerMelds.map((meld) => (
                 <div
                   key={meld.id}
