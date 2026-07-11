@@ -39,11 +39,14 @@ export function Hand({ interactive }: HandProps) {
   }
 
   return (
-    // Deliberately left-aligned, not centered: `justify-center` anywhere in this
-    // scroll chain pushes the start of overflowing content into negative
-    // (unreachable) scroll space, permanently hiding the first card(s).
+    // Centering trick that can't reintroduce the negative-scroll bug: the
+    // scroller is a plain block, and `w-max` + `mx-auto` on its flex child
+    // uses ordinary block-level auto-margin centering (not flex
+    // justify-content). When the hand fits, margins split evenly and it's
+    // centered. When it doesn't, block auto-margins resolve to 0 instead of
+    // negative — the hand just starts flush left, fully reachable by scroll.
     <div className="overflow-x-auto overflow-y-hidden px-2 py-1 landscape:py-0.5">
-      <div className="flex items-end gap-x-3 landscape:gap-x-2">
+      <div className="mx-auto flex w-max items-end gap-x-3 landscape:gap-x-2">
         <AnimatePresence initial={false}>
           {groups.map((group) => (
             <div key={group.id} className="flex shrink-0 items-end rounded-lg">
