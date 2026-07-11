@@ -41,8 +41,12 @@ export function GameTable({ gameId, userId }: GameTableProps) {
       <div className="relative mx-auto mt-1 w-[96%] max-w-5xl flex-1 landscape:min-h-0">
         <div className="absolute inset-0 rounded-t-[3rem] border-4 border-amber-800/80 bg-gradient-to-b from-felt-600 via-felt-700 to-felt-900 shadow-2xl [clip-path:polygon(7%_0%,93%_0%,100%_100%,0%_100%)]" />
 
-        <div className="relative flex h-full flex-col justify-between gap-1 px-4 pb-2 pt-3 landscape:gap-0.5 landscape:px-6 landscape:pt-2">
-          <div className="flex flex-1 items-center justify-between landscape:items-start">
+        {/* overflow-y-auto: if opponents + piles + melds ever need more height
+            than this box has (e.g. many melds on the table, or a short
+            viewport), they scroll here instead of visually spilling into the
+            hand section below. */}
+        <div className="relative flex h-full flex-col justify-between gap-1 overflow-y-auto px-4 pb-2 pt-3 landscape:gap-0.5 landscape:px-6 landscape:pt-2">
+          <div className="flex shrink-0 items-center justify-between landscape:items-start">
             {left && <OpponentPanel player={left} isCurrentTurn={left.playerId === game.currentTurnPlayerId} side="left" />}
 
             <div className="flex flex-col items-center gap-1.5">
@@ -58,7 +62,7 @@ export function GameTable({ gameId, userId }: GameTableProps) {
             )}
           </div>
 
-          <div className="w-full rounded-xl bg-black/15 p-1">
+          <div className="w-full shrink-0 rounded-xl bg-black/15 p-1">
             <MeldArea melds={melds} players={players} selectedMeldId={selectedMeldId} onSelectMeld={selectMeld} />
           </div>
         </div>

@@ -89,7 +89,7 @@ export function ActionBar({ gameId, userId }: ActionBarProps) {
           <span aria-hidden>↑</span> Discard
         </Button>
       </div>
-      <p className="hidden max-w-xs text-center text-[11px] text-white/35 sm:block">
+      <p className="hidden max-w-xs text-center text-[11px] text-white/35 sm:block landscape:hidden">
         Select 3+ cards of the same rank (set) or a same-suit run to Meld. Select a table meld, then hand cards
         that extend it, to Sapaw. Select exactly one card to Discard. Call Fight to end the round now and compare
         hands — if you don't have the lowest, you pay double.
