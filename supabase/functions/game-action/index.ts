@@ -11,6 +11,7 @@ import {
   computeFightResults,
   computeMeldOutResults,
   EngineError,
+  MAX_STREAK_MULTIPLIER,
   pickAutoDiscard,
   resolveFight,
   type CallTongitsMeldOp,
@@ -22,6 +23,8 @@ import {
 } from '../_shared/engine/index.ts'
 
 const TURN_SECONDS = 30
+
+type AdminClient = ReturnType<typeof createAdminClient>
 
 interface RequestBody {
   gameId: string
@@ -56,25 +59,28 @@ function nextDeadline(): string {
   return new Date(Date.now() + TURN_SECONDS * 1000).toISOString()
 }
 
-/** Builds the `game` + `results` patch fragments for an action that just produced a win. */
-function winPatch(win: WinResult) {
-  const { results, winnerId, winType } = resultsPatch(win)
-  return {
-    game: {
-      status: 'finished' as const,
-      ended_at: new Date().toISOString(),
-      winner_id: winnerId,
-      win_type: winType,
-      turn_deadline: null,
-    },
-    results,
-  }
+/**
+ * Looks up the would-be winner's current win streak (from room_players,
+ * which persists across rematches in the same room) and returns the
+ * multiplier for THIS win (streak length, capped) plus the new streak value
+ * to persist. A null winnerId (draw) always yields a 1x multiplier.
+ */
+async function computeStreakMultiplier(admin: AdminClient, roomId: string, winnerId: string | null) {
+  if (!winnerId) return { multiplier: 1, newStreak: 0 }
+  const { data } = await admin
+    .from('room_players')
+    .select('win_streak')
+    .eq('room_id', roomId)
+    .eq('player_id', winnerId)
+    .maybeSingle()
+  const newStreak = (data?.win_streak ?? 0) + 1
+  return { multiplier: Math.min(newStreak, MAX_STREAK_MULTIPLIER), newStreak }
 }
 
-function resultsPatch(win: WinResult) {
+function resultsPatch(win: WinResult, streakMultiplier: number) {
   const players = win.finalHands.map((h) => ({ playerId: h.playerId, unmeldedCards: h.cards }))
   if (win.winType === 'fight') {
-    const results = computeFightResults(players, win.fightInitiatorId)
+    const results = computeFightResults(players, win.fightInitiatorId, streakMultiplier)
     const winner = results.find((r) => r.isWinner)
     return {
       results: results.map((r) => ({
@@ -88,7 +94,12 @@ function resultsPatch(win: WinResult) {
       winType: (winner ? 'fight' : 'draw') as 'fight' | 'draw',
     }
   }
-  const results = computeMeldOutResults(win.winnerId!, players, win.winType as 'meld_out' | 'tongits')
+  const results = computeMeldOutResults(
+    win.winnerId!,
+    players,
+    win.winType as 'meld_out' | 'tongits',
+    streakMultiplier,
+  )
   return {
     results: results.map((r) => ({
       player_id: r.playerId,
@@ -99,6 +110,30 @@ function resultsPatch(win: WinResult) {
     })),
     winnerId: win.winnerId,
     winType: win.winType,
+  }
+}
+
+/** Builds the `game` + `results` + `room_player_updates` patch fragments for an action that just ended the round. */
+async function winPatch(admin: AdminClient, roomId: string, win: WinResult) {
+  const { multiplier, newStreak } = await computeStreakMultiplier(admin, roomId, win.winnerId)
+  const { results, winnerId, winType } = resultsPatch(win, multiplier)
+
+  const room_player_updates = win.finalHands.map((h) => ({
+    player_id: h.playerId,
+    win_streak: h.playerId === winnerId ? newStreak : 0,
+    score_delta: results.find((r) => r.player_id === h.playerId)?.score ?? 0,
+  }))
+
+  return {
+    game: {
+      status: 'finished' as const,
+      ended_at: new Date().toISOString(),
+      winner_id: winnerId,
+      win_type: winType,
+      turn_deadline: null,
+    },
+    results,
+    room_player_updates,
   }
 }
 
@@ -121,7 +156,9 @@ function buildDrawPatch(state: EngineGameState, playerId: string) {
 }
 
 /** Shared by the manual 'discard' action and the auto-discard path of 'claim_timeout'. */
-function buildDiscardPatch(
+async function buildDiscardPatch(
+  admin: AdminClient,
+  roomId: string,
   state: EngineGameState,
   playerId: string,
   card: CardCode,
@@ -132,22 +169,19 @@ function buildDiscardPatch(
 
   if (result.state.deck.length === 0) {
     const fightWin = resolveFight(result.state)
-    const { results, winnerId, winType } = resultsPatch(fightWin)
+    const win = await winPatch(admin, roomId, fightWin)
     return {
       game: {
-        status: 'finished',
+        ...win.game,
         discard_pile: result.state.discardPile,
         has_drawn_this_turn: false,
-        winner_id: winnerId,
-        win_type: winType,
-        ended_at: new Date().toISOString(),
-        turn_deadline: null,
       },
       hands: [{ player_id: playerId, cards: result.state.hands.find((h) => h.playerId === playerId)!.cards }],
       hand_counts: handCountsPatch(result.state),
       discarded_players: [playerId],
       move: { player_id: playerId, action: 'discard', payload: { card, auto } },
-      results,
+      results: win.results,
+      room_player_updates: win.room_player_updates,
     }
   }
 
@@ -239,7 +273,7 @@ Deno.serve(async (req) => {
 
         case 'discard': {
           if (!body.card) return errorResponse('card is required', 400)
-          patch = buildDiscardPatch(state, userId, body.card, game.turn_number, false)
+          patch = await buildDiscardPatch(admin, game.room_id, state, userId, body.card, game.turn_number, false)
           break
         }
 
@@ -248,7 +282,7 @@ Deno.serve(async (req) => {
           const meldId = crypto.randomUUID()
           const result = applyMeld(state, userId, body.type, body.cards, meldId)
           const { melds_insert, melds_update } = meldPatch(state.melds, result.state.melds)
-          const win = result.win ? winPatch(result.win) : null
+          const win = result.win ? await winPatch(admin, game.room_id, result.win) : null
           patch = {
             game: win?.game ?? {},
             hands: [{ player_id: userId, cards: result.state.hands.find((h) => h.playerId === userId)!.cards }],
@@ -256,7 +290,7 @@ Deno.serve(async (req) => {
             melds_insert,
             melds_update,
             move: { player_id: userId, action: 'meld', payload: { type: body.type, cards: body.cards } },
-            ...(win ? { results: win.results } : {}),
+            ...(win ? { results: win.results, room_player_updates: win.room_player_updates } : {}),
           }
           break
         }
@@ -265,7 +299,7 @@ Deno.serve(async (req) => {
           if (!body.meldId || !body.cards) return errorResponse('meldId and cards are required', 400)
           const result = applySapaw(state, userId, body.meldId, body.cards)
           const { melds_insert, melds_update } = meldPatch(state.melds, result.state.melds)
-          const win = result.win ? winPatch(result.win) : null
+          const win = result.win ? await winPatch(admin, game.room_id, result.win) : null
           patch = {
             game: win?.game ?? {},
             hands: [{ player_id: userId, cards: result.state.hands.find((h) => h.playerId === userId)!.cards }],
@@ -273,7 +307,7 @@ Deno.serve(async (req) => {
             melds_insert,
             melds_update,
             move: { player_id: userId, action: 'sapaw', payload: { meldId: body.meldId, cards: body.cards } },
-            ...(win ? { results: win.results } : {}),
+            ...(win ? { results: win.results, room_player_updates: win.room_player_updates } : {}),
           }
           break
         }
@@ -282,7 +316,7 @@ Deno.serve(async (req) => {
           if (!body.melds || body.melds.length === 0) return errorResponse('melds are required', 400)
           const result = applyCallTongits(state, userId, body.melds, () => crypto.randomUUID())
           const { melds_insert, melds_update } = meldPatch(state.melds, result.state.melds)
-          const win = winPatch(result.win!)
+          const win = await winPatch(admin, game.room_id, result.win!)
           patch = {
             game: win.game,
             hands: [{ player_id: userId, cards: [] }],
@@ -291,18 +325,20 @@ Deno.serve(async (req) => {
             melds_update,
             move: { player_id: userId, action: 'call_tongits', payload: { melds: body.melds } },
             results: win.results,
+            room_player_updates: win.room_player_updates,
           }
           break
         }
 
         case 'call_fight': {
           const result = applyFight(state, userId)
-          const win = winPatch(result.win!)
+          const win = await winPatch(admin, game.room_id, result.win!)
           patch = {
             game: win.game,
             hand_counts: handCountsPatch(result.state),
             move: { player_id: userId, action: 'call_fight', payload: {} },
             results: win.results,
+            room_player_updates: win.room_player_updates,
           }
           break
         }
@@ -321,7 +357,7 @@ Deno.serve(async (req) => {
           } else {
             const hand = state.hands.find((h) => h.playerId === currentPlayerId)!
             const card = pickAutoDiscard(hand.cards)
-            patch = buildDiscardPatch(state, currentPlayerId, card, game.turn_number, true)
+            patch = await buildDiscardPatch(admin, game.room_id, state, currentPlayerId, card, game.turn_number, true)
           }
           break
         }

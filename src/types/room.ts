@@ -20,4 +20,8 @@ export interface RoomPlayer {
   joinedAt: string
   username: string
   avatarUrl: string | null
+  /** Cumulative score across every round played in this room (persists across rematches). */
+  totalScore: number
+  /** Consecutive round wins — any non-win resets this to 0. */
+  winStreak: number
 }

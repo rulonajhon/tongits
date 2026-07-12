@@ -85,6 +85,28 @@ request, but isn't required to win.
   being a free action; you only want to call it when you're genuinely
   confident, exactly as intended.
 
+## Win streaks and rematches
+
+Scores are **cumulative for as long as the same 3 players stay in the same
+room** — they persist across rematches, not just within a single round.
+
+- **Win streak**: winning a round increases your personal consecutive-win
+  streak by 1. Any round you don't personally win — losing *or* a drawn
+  Fight — resets your streak back to 0. There's no partial credit for a
+  strong-but-not-winning hand.
+- **Streak multiplier**: on your Nth consecutive win, that round's payout is
+  multiplied by N, capped at **x4**. It stacks with the Tongits double and
+  the failed-fight-call double — e.g. a Tongits win on a 3-win streak pays
+  out at 2 × 3 = 6x. This is what makes staying hot matter: the incentive to
+  "win again" is real money on the table, not just bragging rights.
+- **Rematch**: when a round ends, the room automatically resets to a waiting
+  state instead of closing. The post-round screen offers **Play Again**
+  (returns everyone to the waiting room, where the host starts the next
+  round exactly like the first) or **Back to Lobby** (leaves the room,
+  freeing your seat). Total score and streak keep accumulating for players
+  who stay; leaving forfeits both since they're tied to your seat in this
+  specific room, not your account.
+
 ## Explicitly out of scope for the MVP
 
 These are documented as intentional simplifications / future extensions,

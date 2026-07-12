@@ -32,6 +32,12 @@ export async function startGame(roomId: string): Promise<{ gameId: string }> {
   return data
 }
 
+/** Removes the caller from the room. Only allowed while the room isn't mid-round. */
+export async function leaveRoom(roomId: string): Promise<void> {
+  const { error } = await supabase.functions.invoke('leave-room', { body: { roomId } })
+  if (error) throw error
+}
+
 export async function fetchRoom(roomId: string): Promise<Room> {
   const { data, error } = await supabase.from('rooms').select('*').eq('id', roomId).single()
   if (error) throw error
@@ -54,13 +60,17 @@ interface RoomPlayerRow {
   is_host: boolean
   is_connected: boolean
   joined_at: string
+  total_score: number
+  win_streak: number
   profiles: { username: string; avatar_url: string | null } | null
 }
 
 export async function fetchRoomPlayers(roomId: string): Promise<RoomPlayer[]> {
   const { data, error } = await supabase
     .from('room_players')
-    .select('id, room_id, player_id, seat, is_host, is_connected, joined_at, profiles(username, avatar_url)')
+    .select(
+      'id, room_id, player_id, seat, is_host, is_connected, joined_at, total_score, win_streak, profiles(username, avatar_url)',
+    )
     .eq('room_id', roomId)
     .order('seat', { ascending: true })
 
@@ -76,5 +86,7 @@ export async function fetchRoomPlayers(roomId: string): Promise<RoomPlayer[]> {
     joinedAt: row.joined_at,
     username: row.profiles?.username ?? 'Player',
     avatarUrl: row.profiles?.avatar_url ?? null,
+    totalScore: row.total_score,
+    winStreak: row.win_streak,
   }))
 }

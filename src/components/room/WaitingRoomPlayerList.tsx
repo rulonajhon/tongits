@@ -23,6 +23,13 @@ export function WaitingRoomPlayerList({ players, maxPlayers }: WaitingRoomPlayer
               <>
                 <Avatar username={player.username} avatarUrl={player.avatarUrl} size="sm" online={player.isConnected} />
                 <span className="flex-1 text-sm font-medium text-white">{player.username}</span>
+                {player.winStreak >= 2 && <Badge tone="ruby">🔥 x{Math.min(player.winStreak, 4)}</Badge>}
+                {player.totalScore !== 0 && (
+                  <span className={player.totalScore > 0 ? 'text-xs text-emerald-400' : 'text-xs text-ruby-400'}>
+                    {player.totalScore > 0 ? '+' : ''}
+                    {player.totalScore}
+                  </span>
+                )}
                 {player.isHost && <Badge tone="gold">Host</Badge>}
                 <span className="text-emerald-400">✅</span>
               </>

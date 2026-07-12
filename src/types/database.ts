@@ -62,6 +62,8 @@ export interface Database {
           is_connected: boolean
           joined_at: string
           left_at: string | null
+          total_score: number
+          win_streak: number
         }
         Insert: {
           id?: string
@@ -72,6 +74,8 @@ export interface Database {
           is_connected?: boolean
           joined_at?: string
           left_at?: string | null
+          total_score?: number
+          win_streak?: number
         }
         Update: Partial<Database['public']['Tables']['room_players']['Insert']>
         Relationships: [

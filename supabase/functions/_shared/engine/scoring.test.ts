@@ -43,6 +43,49 @@ describe('computeMeldOutResults', () => {
     const winner = results.find((r) => r.playerId === 'p1')!
     expect(winner.score).toBe(10)
   })
+
+  it('stacks a win-streak multiplier on top of the base payout', () => {
+    const results = computeMeldOutResults(
+      'p1',
+      [
+        { playerId: 'p1', unmeldedCards: [] },
+        { playerId: 'p2', unmeldedCards: ['5H'] },
+      ],
+      'meld_out',
+      3,
+    )
+    const winner = results.find((r) => r.playerId === 'p1')!
+    const loser = results.find((r) => r.playerId === 'p2')!
+    expect(winner.score).toBe(15) // 5 * 3
+    expect(loser.score).toBe(-15)
+    expect(winner.breakdown).toContain('x3 streak')
+  })
+
+  it('stacks the streak multiplier with the Tongits double', () => {
+    const results = computeMeldOutResults(
+      'p1',
+      [
+        { playerId: 'p1', unmeldedCards: [] },
+        { playerId: 'p2', unmeldedCards: ['5H'] },
+      ],
+      'tongits',
+      2,
+    )
+    const winner = results.find((r) => r.playerId === 'p1')!
+    expect(winner.score).toBe(20) // 5 * 2 (tongits) * 2 (streak)
+  })
+
+  it('defaults to no streak multiplier when omitted', () => {
+    const results = computeMeldOutResults(
+      'p1',
+      [
+        { playerId: 'p1', unmeldedCards: [] },
+        { playerId: 'p2', unmeldedCards: ['5H'] },
+      ],
+      'meld_out',
+    )
+    expect(results.find((r) => r.playerId === 'p1')!.breakdown).not.toContain('streak')
+  })
 })
 
 describe('computeFightResults', () => {
@@ -108,6 +151,31 @@ describe('computeFightResults', () => {
         { playerId: 'p3', unmeldedCards: ['KD'] },
       ],
       'p1',
+    )
+    expect(results.every((r) => r.score === 0)).toBe(true)
+  })
+
+  it('applies a streak multiplier to a fight win', () => {
+    const results = computeFightResults(
+      [
+        { playerId: 'p1', unmeldedCards: ['AS'] },
+        { playerId: 'p2', unmeldedCards: ['5H'] },
+      ],
+      undefined,
+      2,
+    )
+    const winner = results.find((r) => r.isWinner)!
+    expect(winner.score).toBe(10) // 5 * 2
+  })
+
+  it('does not apply a streak multiplier on a draw', () => {
+    const results = computeFightResults(
+      [
+        { playerId: 'p1', unmeldedCards: ['5H'] },
+        { playerId: 'p2', unmeldedCards: ['5S'] },
+      ],
+      undefined,
+      3,
     )
     expect(results.every((r) => r.score === 0)).toBe(true)
   })

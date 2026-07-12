@@ -7,9 +7,11 @@ backend. See [RULES.md](./RULES.md) for the exact ruleset enforced
 server-side.
 
 This is a **playable MVP**: auth, lobby, room creation/joining, a waiting
-room, and one complete, server-authoritative 3-player Tongits round with
-real-time sync. Deep reconnection (AI takeover) and most of the
-"future expansion" feature list are architected for but not built — see
+room, a complete server-authoritative 3-player Tongits round with real-time
+sync (turn timers, win streaks, scoring), and rematches — the same three
+players can keep playing round after round in one room with cumulative
+scores. Deep reconnection (AI takeover) and most of the "future expansion"
+feature list are architected for but not built — see
 [Future Extensions](#future-extensions) below.
 
 ## Architecture at a glance
@@ -140,9 +142,8 @@ without a rewrite:
 | Feature | Hook point |
 |---|---|
 | Reconnection + AI takeover | `game_players.is_connected` is already tracked; add a scheduled Edge Function or `pg_cron` job to detect a stale connection and either wait or hand the seat to a bot player |
-| Rematch | `games.room_id` isn't unique — a room can host multiple `games` rows; add a "Rematch" action that calls `start-game` again |
 | Bot players | Bots are just another caller of `game-action` with a service-role-issued action — no schema change needed |
-| Ranked mode / Leaderboard | `game_results` already has a durable per-game score record; aggregate it into a `profiles.rating` or a materialized view |
+| Ranked mode / Leaderboard | `room_players.total_score` (cumulative, per-room) plus `game_results` (per-round, durable) already exist; aggregate either into a `profiles.rating` or a materialized view for a cross-room leaderboard |
 | Coins / Daily rewards | Add a `wallets` table and debit/credit it from within `apply_game_action` alongside `game_players.score` |
 | Friends list / Private chat | New `friendships` / `messages` tables with the same RLS pattern used throughout |
 | Spectator mode | Add a `spectate` RLS policy variant that exposes `game_players`/`melds`/`moves` (never `player_hands`) to non-participants |

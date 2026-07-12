@@ -1,9 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { useGameStore } from '@/stores/gameStore'
 import { useSound } from '@/hooks/useSound'
+import { fetchRoomPlayers, leaveRoom } from '@/services/supabase/rooms'
+import type { RoomPlayer } from '@/types/room'
 
 const WIN_TYPE_LABEL: Record<string, string> = {
   meld_out: 'Melded Out',
@@ -18,6 +20,8 @@ export function WinnerModal({ userId }: { userId: string }) {
   const players = useGameStore((s) => s.players)
   const navigate = useNavigate()
   const { playWin } = useSound()
+  const [roomPlayers, setRoomPlayers] = useState<RoomPlayer[]>([])
+  const [leaving, setLeaving] = useState(false)
 
   const finished = game?.status === 'finished'
 
@@ -25,10 +29,35 @@ export function WinnerModal({ userId }: { userId: string }) {
     if (finished) playWin()
   }, [finished, playWin])
 
+  const roomId = game?.roomId
+
+  useEffect(() => {
+    if (finished && roomId) {
+      fetchRoomPlayers(roomId)
+        .then(setRoomPlayers)
+        .catch(() => setRoomPlayers([]))
+    }
+  }, [finished, roomId])
+
   if (!finished || !results) return null
 
   const you = results.results.find((r) => r.playerId === userId)
   const label = game.winType ? WIN_TYPE_LABEL[game.winType] : 'Round Over'
+  const finishedRoomId = game.roomId
+
+  function handlePlayAgain() {
+    navigate(`/room/${finishedRoomId}`)
+  }
+
+  async function handleLeave() {
+    setLeaving(true)
+    try {
+      await leaveRoom(finishedRoomId)
+    } catch {
+      // Best effort — still take them back to the lobby even if this fails.
+    }
+    navigate('/lobby')
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
@@ -45,6 +74,7 @@ export function WinnerModal({ userId }: { userId: string }) {
         <div className="mt-4 space-y-2">
           {results.results.map((r) => {
             const player = players.find((p) => p.playerId === r.playerId)
+            const roomPlayer = roomPlayers.find((p) => p.playerId === r.playerId)
             return (
               <div key={r.playerId} className="rounded-lg bg-ink-700 px-3 py-2 text-sm">
                 <div className="flex items-center justify-between">
@@ -56,15 +86,25 @@ export function WinnerModal({ userId }: { userId: string }) {
                     {r.score}
                   </span>
                 </div>
-                <p className="mt-0.5 text-left text-xs text-white/40">{r.breakdown}</p>
+                <div className="mt-0.5 flex items-center justify-between">
+                  <p className="text-left text-xs text-white/40">{r.breakdown}</p>
+                  {roomPlayer && (
+                    <p className="shrink-0 pl-2 text-xs text-white/50">Total: {roomPlayer.totalScore}</p>
+                  )}
+                </div>
               </div>
             )
           })}
         </div>
 
-        <Button className="mt-6 w-full" onClick={() => navigate('/lobby')}>
-          Back to Lobby
-        </Button>
+        <div className="mt-6 flex gap-2">
+          <Button variant="secondary" className="flex-1" disabled={leaving} onClick={handleLeave}>
+            {leaving ? 'Leaving…' : 'Back to Lobby'}
+          </Button>
+          <Button className="flex-1" disabled={leaving} onClick={handlePlayAgain}>
+            Play Again
+          </Button>
+        </div>
       </motion.div>
     </div>
   )
