@@ -50,6 +50,7 @@ export type GameActionType =
   | 'draw'
   | 'discard'
   | 'meld'
+  | 'meld_from_discard'
   | 'sapaw'
   | 'call_tongits'
   | 'call_fight'
@@ -68,6 +69,15 @@ export interface MeldActionPayload {
   action: 'meld'
   type: MeldType
   cards: CardCode[]
+}
+
+export interface MeldFromDiscardActionPayload {
+  action: 'meld_from_discard'
+  type: MeldType
+  /** Hand cards only — does not include discardCard. */
+  cards: CardCode[]
+  /** The card the client believes is on top of the discard pile — the server rejects this if it's stale. */
+  discardCard: CardCode
 }
 
 export interface SapawActionPayload {
@@ -94,6 +104,7 @@ export type GameActionPayload =
   | DrawActionPayload
   | DiscardActionPayload
   | MeldActionPayload
+  | MeldFromDiscardActionPayload
   | SapawActionPayload
   | CallTongitsActionPayload
   | CallFightActionPayload

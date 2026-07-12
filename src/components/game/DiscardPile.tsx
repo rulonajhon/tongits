@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { clsx } from 'clsx'
 import { PlayingCard } from './Card'
 import { Modal } from '@/components/ui/Modal'
@@ -6,9 +7,11 @@ import type { CardCode } from '@engine/types'
 
 interface DiscardPileProps {
   cards: CardCode[]
+  /** True when the top card can currently be taken into a new meld — see ActionBar's "Pick Up" button. */
+  canTake?: boolean
 }
 
-export function DiscardPile({ cards }: DiscardPileProps) {
+export function DiscardPile({ cards, canTake }: DiscardPileProps) {
   const [historyOpen, setHistoryOpen] = useState(false)
   const top = cards[cards.length - 1]
 
@@ -28,10 +31,19 @@ export function DiscardPile({ cards }: DiscardPileProps) {
               }
             : undefined
         }
-        className={clsx('flex flex-col items-center gap-0.5', cards.length > 0 && 'cursor-pointer')}
+        className={clsx('relative flex flex-col items-center gap-0.5', cards.length > 0 && 'cursor-pointer')}
       >
         {top ? (
-          <PlayingCard code={top} size="md" layoutId={`discard-${top}`} />
+          <>
+            {canTake && (
+              <motion.div
+                className="pointer-events-none absolute -inset-1.5 rounded-lg bg-amber-400/30"
+                animate={{ opacity: [0.25, 0.55, 0.25] }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            )}
+            <PlayingCard code={top} size="md" layoutId={`discard-${top}`} highlight={canTake ? 'discard' : null} />
+          </>
         ) : (
           <div className="h-23 w-16 rounded-md border border-dashed border-white/20 landscape:h-20 landscape:w-14" />
         )}

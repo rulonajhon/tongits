@@ -3,7 +3,7 @@ import { clsx } from 'clsx'
 import type { CardCode, Rank } from '@engine/types'
 import { isRedSuit, parseCardCode, suitSymbol } from '@/utils/cardUtils'
 
-export type CardHighlight = 'meld' | 'sapaw' | null
+export type CardHighlight = 'meld' | 'sapaw' | 'discard' | null
 
 interface CardProps {
   code?: CardCode
@@ -24,6 +24,7 @@ const sizeClasses = {
 const highlightRing: Record<Exclude<CardHighlight, null>, string> = {
   meld: 'ring-2 ring-emerald-400/80',
   sapaw: 'ring-2 ring-sapphire-500/80',
+  discard: 'ring-2 ring-amber-400/80',
 }
 
 function FaceIcon({ rank, colorClass }: { rank: 'J' | 'Q' | 'K'; colorClass: string }) {

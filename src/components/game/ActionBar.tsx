@@ -48,11 +48,12 @@ export function ActionBar({ gameId, userId, side }: ActionBarProps) {
   const melds = useGameStore((s) => s.melds)
   const selectedCards = useGameStore((s) => s.selectedCards)
   const selectedMeldId = useGameStore((s) => s.selectedMeldId)
-  const { discard, meld, sapaw, fight, pendingAction } = useGameActions(gameId)
+  const { discard, meld, meldFromDiscard, sapaw, fight, pendingAction } = useGameActions(gameId)
   const [confirmFight, setConfirmFight] = useState(false)
 
   const isYourTurn = game?.status === 'playing' && game.currentTurnPlayerId === userId
   const hasDrawn = Boolean(game?.hasDrawnThisTurn)
+  const discardTop = game?.discardPile[game.discardPile.length - 1]
 
   const meldCandidate = useMemo(() => {
     if (selectedCards.length < 3) return null
@@ -68,10 +69,19 @@ export function ActionBar({ gameId, userId, side }: ActionBarProps) {
     return isValidSapaw(target.type, target.cards, selectedCards).valid
   }, [selectedMeldId, selectedCards, melds])
 
+  const meldFromDiscardCandidate = useMemo(() => {
+    if (!discardTop || selectedCards.length < 2) return null
+    const combined = [...selectedCards, discardTop]
+    if (isValidSet(combined).valid) return 'set' as const
+    if (isValidRun(combined).valid) return 'run' as const
+    return null
+  }, [selectedCards, discardTop])
+
   const canDiscard = isYourTurn && hasDrawn && selectedCards.length === 1 && !pendingAction
   const canMeld = isYourTurn && hasDrawn && meldCandidate !== null && !pendingAction
   const canSapaw = isYourTurn && hasDrawn && sapawCandidate && !pendingAction
   const canFight = isYourTurn && hasDrawn && !pendingAction
+  const canPickUpMeld = isYourTurn && !hasDrawn && meldFromDiscardCandidate !== null && !pendingAction
 
   if (side === 'left') {
     return (
@@ -89,6 +99,13 @@ export function ActionBar({ gameId, userId, side }: ActionBarProps) {
           variant="info"
           disabled={!canSapaw}
           onClick={() => sapaw(selectedMeldId!, selectedCards)}
+        />
+        <ActionButton
+          icon="⇩"
+          label="Pick Up"
+          variant="success"
+          disabled={!canPickUpMeld}
+          onClick={() => meldFromDiscard(meldFromDiscardCandidate!, selectedCards, discardTop!)}
         />
       </div>
     )

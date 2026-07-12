@@ -118,6 +118,53 @@ export function applyMeld(
   return { state: next, win }
 }
 
+/**
+ * The next player may take the card their predecessor just discarded — but
+ * only in the instant it's still on top of the pile (i.e. only the player
+ * whose turn it now is, before they've drawn), and only if it immediately
+ * completes a brand-new set/run together with cards already in their hand.
+ * This substitutes for their normal draw; the rest of their turn (further
+ * melds/sapaw, then discard) proceeds exactly as if they'd drawn normally.
+ */
+export function applyMeldFromDiscard(
+  state: EngineGameState,
+  playerId: string,
+  type: MeldType,
+  cards: CardCode[],
+  expectedTopCard: CardCode,
+  meldId: string,
+): ActionResult {
+  requireTurn(state, playerId)
+  if (state.hasDrawnThisTurn) {
+    throw new EngineError('You have already drawn this turn', 'already_drawn')
+  }
+  if (state.discardPile.length === 0) {
+    throw new EngineError('The discard pile is empty', 'discard_pile_empty')
+  }
+  const topCard = state.discardPile[state.discardPile.length - 1]
+  if (topCard !== expectedTopCard) {
+    throw new EngineError(
+      'The discard pile has changed — only the current top card can be taken',
+      'stale_discard',
+    )
+  }
+  const combined = [...cards, topCard]
+  const validation = isValidMeld(type, combined)
+  if (!validation.valid) {
+    throw new EngineError(validation.reason ?? 'Invalid meld', 'invalid_meld')
+  }
+  const next = cloneState(state)
+  const hand = requireHand(next, playerId)
+  removeCardsFromHand(hand, cards)
+  next.discardPile.pop()
+  const meld: TableMeld = { id: meldId, ownerId: playerId, type, cards: combined }
+  next.melds.push(meld)
+  next.hasDrawnThisTurn = true
+  const win = handEmptyWin(next, playerId, hand)
+  if (win) next.status = 'finished'
+  return { state: next, win }
+}
+
 export function applySapaw(
   state: EngineGameState,
   playerId: string,

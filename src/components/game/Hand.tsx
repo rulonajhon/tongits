@@ -3,12 +3,14 @@ import { clsx } from 'clsx'
 import { PlayingCard } from './Card'
 import { useGameStore } from '@/stores/gameStore'
 import { groupHandForDisplay, sapawEligibleCards } from '@/utils/handGrouping'
+import { discardMeldEligibleCards } from '@engine/melds'
 
 interface HandProps {
   interactive: boolean
 }
 
 export function Hand({ interactive }: HandProps) {
+  const game = useGameStore((s) => s.game)
   const ownHand = useGameStore((s) => s.ownHand)
   const selectedCards = useGameStore((s) => s.selectedCards)
   const selectedMeldId = useGameStore((s) => s.selectedMeldId)
@@ -20,7 +22,17 @@ export function Hand({ interactive }: HandProps) {
   const selectedMeld = selectedMeldId ? melds.find((m) => m.id === selectedMeldId) : null
   const sapawTargets = selectedMeld ? sapawEligibleCards(ownHand, selectedMeld.type, selectedMeld.cards) : null
 
+  // Before drawing, cards that could combine with the top discard card into
+  // a brand-new meld get a hint ring — the discard pile is the alternative
+  // to the draw pile, only usable this way (see ActionBar's "Pick Up" button).
+  const discardTop = game?.discardPile[game.discardPile.length - 1]
+  const discardTargets =
+    !sapawTargets && interactive && !game?.hasDrawnThisTurn && discardTop
+      ? discardMeldEligibleCards(discardTop, ownHand)
+      : null
+
   function renderCard(code: string, indexInGroup: number) {
+    const highlight = sapawTargets?.has(code) ? 'sapaw' : discardTargets?.has(code) ? 'discard' : null
     return (
       // Overlap cards within a group (skip the first) — the rank is anchored
       // to each card's upper-left corner specifically so it stays readable
@@ -31,7 +43,7 @@ export function Hand({ interactive }: HandProps) {
           layoutId={`hand-${code}`}
           size="lg"
           selected={selectedCards.includes(code)}
-          highlight={sapawTargets?.has(code) ? 'sapaw' : null}
+          highlight={highlight}
           onClick={interactive ? () => toggleCardSelection(code) : undefined}
         />
       </div>

@@ -41,11 +41,16 @@ export function useGameActions(gameId: string) {
     (type: MeldType, cards: CardCode[]) => run({ action: 'meld', type, cards }, playMeld),
     [run, playMeld],
   )
+  const meldFromDiscard = useCallback(
+    (type: MeldType, cards: CardCode[], discardCard: CardCode) =>
+      run({ action: 'meld_from_discard', type, cards, discardCard }, playMeld),
+    [run, playMeld],
+  )
   const sapaw = useCallback(
     (meldId: string, cards: CardCode[]) => run({ action: 'sapaw', meldId, cards }, playMeld),
     [run, playMeld],
   )
   const fight = useCallback(() => run({ action: 'call_fight' }, playFight), [run, playFight])
 
-  return { draw, discard, meld, sapaw, fight, pendingAction }
+  return { draw, discard, meld, meldFromDiscard, sapaw, fight, pendingAction }
 }

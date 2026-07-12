@@ -7,6 +7,7 @@ import {
   applyDraw,
   applyFight,
   applyMeld,
+  applyMeldFromDiscard,
   applySapaw,
   computeFightResults,
   computeMeldOutResults,
@@ -28,12 +29,14 @@ type AdminClient = ReturnType<typeof createAdminClient>
 
 interface RequestBody {
   gameId: string
-  action: 'draw' | 'discard' | 'meld' | 'sapaw' | 'call_tongits' | 'call_fight' | 'claim_timeout'
+  action: 'draw' | 'discard' | 'meld' | 'meld_from_discard' | 'sapaw' | 'call_tongits' | 'call_fight' | 'claim_timeout'
   card?: CardCode
   type?: MeldType
   cards?: CardCode[]
   meldId?: string
   melds?: CallTongitsMeldOp[]
+  /** For 'meld_from_discard' — the card the client believes is on top of the discard pile. */
+  discardCard?: CardCode
 }
 
 function meldPatch(before: TableMeld[], after: TableMeld[]) {
@@ -290,6 +293,35 @@ Deno.serve(async (req) => {
             melds_insert,
             melds_update,
             move: { player_id: userId, action: 'meld', payload: { type: body.type, cards: body.cards } },
+            ...(win ? { results: win.results, room_player_updates: win.room_player_updates } : {}),
+          }
+          break
+        }
+
+        case 'meld_from_discard': {
+          if (!body.type || !body.cards || !body.discardCard) {
+            return errorResponse('type, cards, and discardCard are required', 400)
+          }
+          const meldId = crypto.randomUUID()
+          const result = applyMeldFromDiscard(state, userId, body.type, body.cards, body.discardCard, meldId)
+          const { melds_insert, melds_update } = meldPatch(state.melds, result.state.melds)
+          const win = result.win ? await winPatch(admin, game.room_id, result.win) : null
+          patch = {
+            game: {
+              ...(win?.game ?? {}),
+              discard_pile: result.state.discardPile,
+              has_drawn_this_turn: win ? false : true,
+              turn_deadline: win ? null : nextDeadline(),
+            },
+            hands: [{ player_id: userId, cards: result.state.hands.find((h) => h.playerId === userId)!.cards }],
+            hand_counts: handCountsPatch(result.state),
+            melds_insert,
+            melds_update,
+            move: {
+              player_id: userId,
+              action: 'meld_from_discard',
+              payload: { type: body.type, cards: body.cards, discardCard: body.discardCard },
+            },
             ...(win ? { results: win.results, room_player_updates: win.room_player_updates } : {}),
           }
           break

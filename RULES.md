@@ -17,11 +17,23 @@ if you want different scoring or sapaw conditions.
 
 On your turn:
 
-1. **Draw** one card from the draw pile (skip straight to a Fight if the
-   pile is empty — see below).
+1. **Draw** — either:
+   - one card from the closed draw pile (face-down, unseen until it's in
+     your hand); or
+   - the top card of the discard pile, but **only** if you use that exact
+     card, together with cards already in your hand, to form a brand-new
+     set or run *immediately, as part of the same action*. You can't take a
+     discard just to hold onto it for later, and only the player whose turn
+     it now is can take it — once anyone draws (or a further discard buries
+     it), that card is gone for good, same as always. This substitutes for
+     your normal draw; the rest of your turn proceeds exactly as if you'd
+     drawn blind. (Skip straight to a Fight if the draw pile is empty at the
+     start of your turn — see below.)
 2. Optionally **Meld** new sets/runs and/or **Sapaw** (attach cards from
    your hand onto any existing table meld, yours or an opponent's,
-   including melds formed earlier in the same turn).
+   including melds formed earlier in the same turn). Taking a discard card
+   only ever creates a **new** meld — it's never used to sapaw onto an
+   existing one.
 3. Either **Discard** exactly one card, ending your turn (unless melding
    emptied your hand, in which case you've won and there's nothing left to
    discard) — **or call Fight instead** (see below) to end the round on the
@@ -47,8 +59,8 @@ client-side clock, so it can't be gamed by a fast or slow client.
 ## Winning
 
 - **Meld-out win**: your hand reaches zero cards during your turn (via
-  melding/sapaw). If you had already discarded at least once this round,
-  this is a standard win.
+  melding/sapaw/taking the discard). If you had already discarded at least
+  once this round, this is a standard win.
 - **Tongits win**: same as above, but you reach zero cards **without ever
   having discarded** this round. This is the marquee win — it doubles the
   payout.

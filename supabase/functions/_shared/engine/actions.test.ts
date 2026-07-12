@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { applyCallTongits, applyDiscard, applyDraw, applyFight, applyMeld, applySapaw, resolveFight } from './actions.ts'
+import {
+  applyCallTongits,
+  applyDiscard,
+  applyDraw,
+  applyFight,
+  applyMeld,
+  applyMeldFromDiscard,
+  applySapaw,
+  resolveFight,
+} from './actions.ts'
 import type { EngineGameState } from './types.ts'
 import { EngineError } from './types.ts'
 
@@ -169,6 +178,224 @@ describe('applyMeld', () => {
       ],
     })
     expect(() => applyMeld(state, 'p1', 'set', ['7S', '7H', '7D'], 'm1')).toThrow(/draw before/)
+  })
+})
+
+describe('applyMeldFromDiscard', () => {
+  it('takes the top discard card and melds it with hand cards, in place of a draw (3-card set)', () => {
+    const state = makeState({
+      discardPile: ['7C', '8S'],
+      hands: [
+        { playerId: 'p1', cards: ['8H', '8D', '2C'], hasDiscarded: false },
+        { playerId: 'p2', cards: [], hasDiscarded: false },
+        { playerId: 'p3', cards: [], hasDiscarded: false },
+      ],
+    })
+    const result = applyMeldFromDiscard(state, 'p1', 'set', ['8H', '8D'], '8S', 'm1')
+    expect(result.state.discardPile).toEqual(['7C'])
+    expect(result.state.hands[0].cards).toEqual(['2C'])
+    expect(result.state.melds).toEqual([{ id: 'm1', ownerId: 'p1', type: 'set', cards: ['8H', '8D', '8S'] }])
+    expect(result.state.hasDrawnThisTurn).toBe(true)
+  })
+
+  it('takes the discard into a 4-card set', () => {
+    const state = makeState({
+      discardPile: ['8S'],
+      hands: [
+        { playerId: 'p1', cards: ['8H', '8D', '8C'], hasDiscarded: false },
+        { playerId: 'p2', cards: [], hasDiscarded: false },
+        { playerId: 'p3', cards: [], hasDiscarded: false },
+      ],
+    })
+    const result = applyMeldFromDiscard(state, 'p1', 'set', ['8H', '8D', '8C'], '8S', 'm1')
+    expect(result.state.melds[0].cards).toEqual(['8H', '8D', '8C', '8S'])
+  })
+
+  it('takes the discard into a 3-card run', () => {
+    const state = makeState({
+      discardPile: ['7H'],
+      hands: [
+        { playerId: 'p1', cards: ['5H', '6H'], hasDiscarded: false },
+        { playerId: 'p2', cards: [], hasDiscarded: false },
+        { playerId: 'p3', cards: [], hasDiscarded: false },
+      ],
+    })
+    const result = applyMeldFromDiscard(state, 'p1', 'run', ['5H', '6H'], '7H', 'm1')
+    expect(result.state.melds[0]).toEqual({ id: 'm1', ownerId: 'p1', type: 'run', cards: ['5H', '6H', '7H'] })
+  })
+
+  it('takes the discard into a run longer than 3 cards', () => {
+    const state = makeState({
+      discardPile: ['8S'],
+      hands: [
+        { playerId: 'p1', cards: ['5S', '6S', '7S'], hasDiscarded: false },
+        { playerId: 'p2', cards: [], hasDiscarded: false },
+        { playerId: 'p3', cards: [], hasDiscarded: false },
+      ],
+    })
+    const result = applyMeldFromDiscard(state, 'p1', 'run', ['5S', '6S', '7S'], '8S', 'm1')
+    expect(result.state.melds[0].cards).toEqual(['5S', '6S', '7S', '8S'])
+  })
+
+  it('wins with tongits when taking the discard empties the hand with zero prior discards', () => {
+    const state = makeState({
+      discardPile: ['8S'],
+      hands: [
+        { playerId: 'p1', cards: ['8H', '8D'], hasDiscarded: false },
+        { playerId: 'p2', cards: [], hasDiscarded: false },
+        { playerId: 'p3', cards: [], hasDiscarded: false },
+      ],
+    })
+    const result = applyMeldFromDiscard(state, 'p1', 'set', ['8H', '8D'], '8S', 'm1')
+    expect(result.win).toEqual(expect.objectContaining({ winnerId: 'p1', winType: 'tongits' }))
+    expect(result.state.status).toBe('finished')
+  })
+
+  it('requires the discard afterward — hasDrawnThisTurn is true so a further meld/sapaw/discard can follow', () => {
+    const state = makeState({
+      discardPile: ['8S'],
+      hands: [
+        { playerId: 'p1', cards: ['8H', '8D', '2C'], hasDiscarded: false },
+        { playerId: 'p2', cards: [], hasDiscarded: false },
+        { playerId: 'p3', cards: [], hasDiscarded: false },
+      ],
+    })
+    const result = applyMeldFromDiscard(state, 'p1', 'set', ['8H', '8D'], '8S', 'm1')
+    expect(() => applyMeld(result.state, 'p2', 'set', [], 'm2')).toThrow(/not your turn/)
+    expect(result.state.currentTurnPlayerId).toBe('p1')
+    expect(result.state.hasDrawnThisTurn).toBe(true)
+  })
+
+  it('rejects it once the player has already drawn this turn', () => {
+    const state = makeState({
+      hasDrawnThisTurn: true,
+      discardPile: ['8S'],
+      hands: [
+        { playerId: 'p1', cards: ['8H', '8D'], hasDiscarded: false },
+        { playerId: 'p2', cards: [], hasDiscarded: false },
+        { playerId: 'p3', cards: [], hasDiscarded: false },
+      ],
+    })
+    expect(() => applyMeldFromDiscard(state, 'p1', 'set', ['8H', '8D'], '8S', 'm1')).toThrow(/already drawn/)
+  })
+
+  it('rejects it when the discard pile is empty', () => {
+    const state = makeState({
+      discardPile: [],
+      hands: [
+        { playerId: 'p1', cards: ['8H', '8D'], hasDiscarded: false },
+        { playerId: 'p2', cards: [], hasDiscarded: false },
+        { playerId: 'p3', cards: [], hasDiscarded: false },
+      ],
+    })
+    expect(() => applyMeldFromDiscard(state, 'p1', 'set', ['8H', '8D'], '8S', 'm1')).toThrow(/discard pile is empty/)
+  })
+
+  it('rejects a stale top-card claim (someone else already changed the pile)', () => {
+    const state = makeState({
+      discardPile: ['8S'],
+      hands: [
+        { playerId: 'p1', cards: ['8H', '8D'], hasDiscarded: false },
+        { playerId: 'p2', cards: [], hasDiscarded: false },
+        { playerId: 'p3', cards: [], hasDiscarded: false },
+      ],
+    })
+    expect(() => applyMeldFromDiscard(state, 'p1', 'set', ['8H', '8D'], '9C', 'm1')).toThrow(/discard pile has changed/)
+  })
+
+  it('rejects mixed-suit cards that cannot form a run with the discard', () => {
+    const state = makeState({
+      discardPile: ['7H'],
+      hands: [
+        { playerId: 'p1', cards: ['5H', '6S'], hasDiscarded: false },
+        { playerId: 'p2', cards: [], hasDiscarded: false },
+        { playerId: 'p3', cards: [], hasDiscarded: false },
+      ],
+    })
+    expect(() => applyMeldFromDiscard(state, 'p1', 'run', ['5H', '6S'], '7H', 'm1')).toThrow(EngineError)
+  })
+
+  it('rejects a non-consecutive run selection', () => {
+    const state = makeState({
+      discardPile: ['7H'],
+      hands: [
+        { playerId: 'p1', cards: ['4H', '5H'], hasDiscarded: false },
+        { playerId: 'p2', cards: [], hasDiscarded: false },
+        { playerId: 'p3', cards: [], hasDiscarded: false },
+      ],
+    })
+    expect(() => applyMeldFromDiscard(state, 'p1', 'run', ['4H', '5H'], '7H', 'm1')).toThrow(EngineError)
+  })
+
+  it('rejects a single supporting card — a meld needs at least three cards total', () => {
+    const state = makeState({
+      discardPile: ['7H'],
+      hands: [
+        { playerId: 'p1', cards: ['7C'], hasDiscarded: false },
+        { playerId: 'p2', cards: [], hasDiscarded: false },
+        { playerId: 'p3', cards: [], hasDiscarded: false },
+      ],
+    })
+    expect(() => applyMeldFromDiscard(state, 'p1', 'set', ['7C'], '7H', 'm1')).toThrow(EngineError)
+  })
+
+  it('rejects a hand selection that does not combine with the discard into a valid meld', () => {
+    const state = makeState({
+      discardPile: ['8S'],
+      hands: [
+        { playerId: 'p1', cards: ['8H', '2C'], hasDiscarded: false },
+        { playerId: 'p2', cards: [], hasDiscarded: false },
+        { playerId: 'p3', cards: [], hasDiscarded: false },
+      ],
+    })
+    expect(() => applyMeldFromDiscard(state, 'p1', 'set', ['8H', '2C'], '8S', 'm1')).toThrow(EngineError)
+  })
+
+  it('rejects it out of turn', () => {
+    const state = makeState({ discardPile: ['8S'] })
+    expect(() => applyMeldFromDiscard(state, 'p2', 'set', ['8H', '8D'], '8S', 'm1')).toThrow(EngineError)
+  })
+
+  it('rejects a card not actually in the player hand', () => {
+    const state = makeState({
+      discardPile: ['8S'],
+      hands: [
+        { playerId: 'p1', cards: ['8H'], hasDiscarded: false },
+        { playerId: 'p2', cards: [], hasDiscarded: false },
+        { playerId: 'p3', cards: [], hasDiscarded: false },
+      ],
+    })
+    expect(() => applyMeldFromDiscard(state, 'p1', 'set', ['8H', '8D'], '8S', 'm1')).toThrow(/not in your hand/)
+  })
+
+  it('only removes the selected hand cards, leaving the discard-sourced card out of the hand entirely', () => {
+    const state = makeState({
+      discardPile: ['4H', '5H'],
+      hands: [
+        { playerId: 'p1', cards: ['3H', '4H'], hasDiscarded: false },
+        { playerId: 'p2', cards: [], hasDiscarded: false },
+        { playerId: 'p3', cards: [], hasDiscarded: false },
+      ],
+    })
+    const result = applyMeldFromDiscard(state, 'p1', 'run', ['3H', '4H'], '5H', 'm1')
+    expect(result.state.discardPile).toEqual(['4H'])
+    expect(result.state.melds[0].cards).toEqual(['3H', '4H', '5H'])
+    expect(result.state.hands[0].cards).toEqual([])
+  })
+
+  it('does not mutate the original state', () => {
+    const state = makeState({
+      discardPile: ['8S'],
+      hands: [
+        { playerId: 'p1', cards: ['8H', '8D'], hasDiscarded: false },
+        { playerId: 'p2', cards: [], hasDiscarded: false },
+        { playerId: 'p3', cards: [], hasDiscarded: false },
+      ],
+    })
+    applyMeldFromDiscard(state, 'p1', 'set', ['8H', '8D'], '8S', 'm1')
+    expect(state.discardPile).toEqual(['8S'])
+    expect(state.hands[0].cards).toEqual(['8H', '8D'])
+    expect(state.melds).toEqual([])
   })
 })
 
