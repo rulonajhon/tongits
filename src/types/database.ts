@@ -38,6 +38,17 @@ export interface Database {
           max_players: number
           created_at: string
           updated_at: string
+          current_hitter_player_id: string | null
+          hitter_win_streak: number
+          required_consecutive_wins: number
+          jackpot_amount: number
+          jackpot_starting_amount: number
+          ante_per_player: number
+          jackpot_contribution_per_hand: number
+          jackpot_contribution_mode: 'ante_per_player' | 'fixed_per_hand' | 'manual'
+          jackpot_reset_mode: 'reset_to_zero' | 'reset_to_base'
+          hitter_updated_at: string | null
+          jackpot_version: number
         }
         Insert: {
           id?: string
@@ -48,6 +59,17 @@ export interface Database {
           max_players?: number
           created_at?: string
           updated_at?: string
+          current_hitter_player_id?: string | null
+          hitter_win_streak?: number
+          required_consecutive_wins?: number
+          jackpot_amount?: number
+          jackpot_starting_amount?: number
+          ante_per_player?: number
+          jackpot_contribution_per_hand?: number
+          jackpot_contribution_mode?: 'ante_per_player' | 'fixed_per_hand' | 'manual'
+          jackpot_reset_mode?: 'reset_to_zero' | 'reset_to_base'
+          hitter_updated_at?: string | null
+          jackpot_version?: number
         }
         Update: Partial<Database['public']['Tables']['rooms']['Insert']>
         Relationships: []
@@ -228,6 +250,40 @@ export interface Database {
           created_at?: string
         }
         Update: Partial<Database['public']['Tables']['game_results']['Insert']>
+        Relationships: []
+      }
+      hitter_history: {
+        Row: {
+          id: string
+          room_id: string
+          game_id: string
+          hand_winner_player_id: string | null
+          previous_hitter_player_id: string | null
+          new_hitter_player_id: string | null
+          previous_streak: number
+          new_streak: number
+          jackpot_before: number
+          jackpot_after: number
+          jackpot_awarded: boolean
+          jackpot_winner_player_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          room_id: string
+          game_id: string
+          hand_winner_player_id?: string | null
+          previous_hitter_player_id?: string | null
+          new_hitter_player_id?: string | null
+          previous_streak: number
+          new_streak: number
+          jackpot_before: number
+          jackpot_after: number
+          jackpot_awarded?: boolean
+          jackpot_winner_player_id?: string | null
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['hitter_history']['Insert']>
         Relationships: []
       }
     }

@@ -5,6 +5,7 @@ import type {
   GamePlayerPublic,
   GameResults,
   GameStateRow,
+  HitterHistoryEntry,
   Meld,
   PlayerResult,
 } from '@/types/game'
@@ -139,4 +140,27 @@ export async function fetchGameResults(gameId: string): Promise<GameResults | nu
     breakdown: r.breakdown,
   }))
   return { gameId: data.game_id, results }
+}
+
+/** The Hitter jackpot transition for a finished hand, if it had an official winner. */
+export async function fetchHitterHistory(gameId: string): Promise<HitterHistoryEntry | null> {
+  const { data, error } = await supabase
+    .from('hitter_history')
+    .select('*')
+    .eq('game_id', gameId)
+    .maybeSingle()
+  if (error) throw error
+  if (!data) return null
+  return {
+    gameId: data.game_id,
+    handWinnerPlayerId: data.hand_winner_player_id,
+    previousHitterPlayerId: data.previous_hitter_player_id,
+    newHitterPlayerId: data.new_hitter_player_id,
+    previousStreak: data.previous_streak,
+    newStreak: data.new_streak,
+    jackpotBefore: data.jackpot_before,
+    jackpotAfter: data.jackpot_after,
+    jackpotAwarded: data.jackpot_awarded,
+    jackpotWinnerPlayerId: data.jackpot_winner_player_id,
+  }
 }

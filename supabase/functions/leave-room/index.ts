@@ -31,6 +31,16 @@ Deno.serve(async (req) => {
 
     if (deleteError) return errorResponse(deleteError.message, 500)
 
+    // Hitter-leave policy (Option A, the default): a departing Hitter
+    // forfeits their streak, but the jackpot they were chasing stays in the
+    // pot for whoever's next. The `.eq('current_hitter_player_id', userId)`
+    // guard makes this a no-op when the leaving player wasn't the Hitter.
+    await admin
+      .from('rooms')
+      .update({ current_hitter_player_id: null, hitter_win_streak: 0, hitter_updated_at: new Date().toISOString() })
+      .eq('id', roomId)
+      .eq('current_hitter_player_id', userId)
+
     return jsonResponse({ ok: true })
   } catch (err) {
     if (err instanceof UnauthorizedError) return errorResponse(err.message, 401)

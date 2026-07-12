@@ -1,6 +1,8 @@
 import { useGameStore } from '@/stores/gameStore'
+import { useRoomStore } from '@/stores/roomStore'
 import { useGameActions } from '@/hooks/useGameActions'
 import { canTakeDiscard, isValidNewMeld } from '@engine/melds'
+import { JackpotDisplay } from '@/components/room/JackpotDisplay'
 import { OpponentPanel } from './OpponentPanel'
 import { DrawPile } from './DrawPile'
 import { DiscardPile } from './DiscardPile'
@@ -21,6 +23,7 @@ export function GameTable({ gameId, userId }: GameTableProps) {
   const players = useGameStore((s) => s.players)
   const melds = useGameStore((s) => s.melds)
   const ownHand = useGameStore((s) => s.ownHand)
+  const room = useRoomStore((s) => s.room)
   const selectedCards = useGameStore((s) => s.selectedCards)
   const selectedMeldId = useGameStore((s) => s.selectedMeldId)
   const selectMeld = useGameStore((s) => s.selectMeld)
@@ -38,6 +41,7 @@ export function GameTable({ gameId, userId }: GameTableProps) {
   const discardTop = game.discardPile[game.discardPile.length - 1]
   const canTakeTopDiscard =
     isYourTurn && !game.hasDrawnThisTurn && Boolean(discardTop) && canTakeDiscard(discardTop, ownHand)
+  const hitterUsername = players.find((p) => p.playerId === room?.currentHitterPlayerId)?.username ?? null
   // Only nag once they've actually tried a combination that doesn't work —
   // not on every pre-draw turn, which would be noisy for the common case.
   const attemptedInvalidDiscardPickup =
@@ -50,6 +54,15 @@ export function GameTable({ gameId, userId }: GameTableProps) {
   return (
     <div className="flex h-full min-h-screen flex-col overflow-y-auto bg-ink-800 landscape:h-screen">
       <div className="flex shrink-0 items-center justify-center gap-2 py-0.5 landscape:py-0">
+        {room && (
+          <JackpotDisplay
+            compact
+            jackpotAmount={room.jackpotAmount}
+            hitterUsername={hitterUsername}
+            hitterWinStreak={room.hitterWinStreak}
+            requiredConsecutiveWins={room.requiredConsecutiveWins}
+          />
+        )}
         <TurnIndicator isYourTurn={isYourTurn} currentPlayerName={currentPlayer?.username ?? '…'} />
         <TurnTimer gameId={gameId} />
       </div>

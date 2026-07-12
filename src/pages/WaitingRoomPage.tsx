@@ -6,6 +6,7 @@ import { useRoomPresence } from '@/hooks/usePresence'
 import { useRoomStore } from '@/stores/roomStore'
 import { RoomCodeDisplay } from '@/components/room/RoomCodeDisplay'
 import { WaitingRoomPlayerList } from '@/components/room/WaitingRoomPlayerList'
+import { JackpotDisplay } from '@/components/room/JackpotDisplay'
 import { StartButton } from '@/components/room/StartButton'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { fetchLatestGameIdForRoom } from '@/services/supabase/games'
@@ -52,10 +53,17 @@ export function WaitingRoomPage() {
   }
 
   const isHost = room.hostId === userId
+  const hitterUsername = players.find((p) => p.playerId === room.currentHitterPlayerId)?.username ?? null
 
   return (
     <div className="mx-auto flex min-h-full max-w-md flex-col gap-4 p-4">
       <RoomCodeDisplay roomNumber={room.roomNumber} />
+      <JackpotDisplay
+        jackpotAmount={room.jackpotAmount}
+        hitterUsername={hitterUsername}
+        hitterWinStreak={room.hitterWinStreak}
+        requiredConsecutiveWins={room.requiredConsecutiveWins}
+      />
       <div className="rounded-2xl bg-ink-800 p-4">
         <h2 className="mb-2 text-sm font-medium text-white/60">Players</h2>
         <WaitingRoomPlayerList players={players} maxPlayers={room.maxPlayers} />

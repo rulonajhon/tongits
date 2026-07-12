@@ -74,6 +74,16 @@ export function useSound() {
       ]),
     [play],
   )
+  const playJackpot = useCallback(
+    () =>
+      play([
+        { freq: 523, duration: 0.12 },
+        { freq: 659, duration: 0.12, delay: 0.1 },
+        { freq: 784, duration: 0.12, delay: 0.2 },
+        { freq: 1047, duration: 0.32, delay: 0.3, gain: 0.18 },
+      ]),
+    [play],
+  )
 
-  return { playDraw, playDiscard, playMeld, playTurn, playWin, playError, playFight }
+  return { playDraw, playDiscard, playMeld, playTurn, playWin, playError, playFight, playJackpot }
 }

@@ -49,6 +49,16 @@ export async function fetchRoom(roomId: string): Promise<Room> {
     status: data.status,
     maxPlayers: data.max_players,
     createdAt: data.created_at,
+    currentHitterPlayerId: data.current_hitter_player_id,
+    hitterWinStreak: data.hitter_win_streak,
+    requiredConsecutiveWins: data.required_consecutive_wins,
+    jackpotAmount: data.jackpot_amount,
+    jackpotStartingAmount: data.jackpot_starting_amount,
+    antePerPlayer: data.ante_per_player,
+    jackpotContributionPerHand: data.jackpot_contribution_per_hand,
+    jackpotContributionMode: data.jackpot_contribution_mode,
+    jackpotResetMode: data.jackpot_reset_mode,
+    hitterUpdatedAt: data.hitter_updated_at,
   }
 }
 

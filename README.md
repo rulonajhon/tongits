@@ -8,10 +8,11 @@ server-side.
 
 This is a **playable MVP**: auth, lobby, room creation/joining, a waiting
 room, a complete server-authoritative 3-player Tongits round with real-time
-sync (turn timers, win streaks, scoring), and rematches — the same three
-players can keep playing round after round in one room with cumulative
-scores. Deep reconnection (AI takeover) and most of the "future expansion"
-feature list are architected for but not built — see
+sync (turn timers, win streaks, scoring), rematches — the same three players
+can keep playing round after round in one room with cumulative scores — and
+a "Hitter" jackpot pot that pays out to whoever wins two hands in a row.
+Deep reconnection (AI takeover) and most of the "future expansion" feature
+list are architected for but not built — see
 [Future Extensions](#future-extensions) below.
 
 ## Architecture at a glance
@@ -144,7 +145,8 @@ without a rewrite:
 | Reconnection + AI takeover | `game_players.is_connected` is already tracked; add a scheduled Edge Function or `pg_cron` job to detect a stale connection and either wait or hand the seat to a bot player |
 | Bot players | Bots are just another caller of `game-action` with a service-role-issued action — no schema change needed |
 | Ranked mode / Leaderboard | `room_players.total_score` (cumulative, per-room) plus `game_results` (per-round, durable) already exist; aggregate either into a `profiles.rating` or a materialized view for a cross-room leaderboard |
-| Coins / Daily rewards | Add a `wallets` table and debit/credit it from within `apply_game_action` alongside `game_players.score` |
+| Real coin economy | The Hitter jackpot and all scoring reuse `room_players.total_score` as an abstract ledger; swap it for a real `wallets` + `transactions` pair if you need persistent currency outside a room |
+| Daily rewards | Hook into the same `total_score` ledger, or a new `wallets` table if you've split one out |
 | Friends list / Private chat | New `friendships` / `messages` tables with the same RLS pattern used throughout |
 | Spectator mode | Add a `spectate` RLS policy variant that exposes `game_players`/`melds`/`moves` (never `player_hands`) to non-participants |
 | Custom avatars | `profiles.avatar_url` already exists; add Supabase Storage upload |

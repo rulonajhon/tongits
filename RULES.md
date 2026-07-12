@@ -125,6 +125,40 @@ room** — they persist across rematches, not just within a single round.
   who stay; leaving forfeits both since they're tied to your seat in this
   specific room, not your account.
 
+## The Hitter jackpot
+
+Separate from the win-streak multiplier above, each room also has a shared
+**jackpot pot**. This isn't about who wins a single hand — that's still
+decided entirely by the normal Tongits rules above. It's about who gets to
+*claim* the pot.
+
+- **The Hitter**: whoever won the most recent hand is the "Hitter" with a
+  win streak of 1. If a *different* player wins the next hand, they become
+  the new Hitter with a streak of 1 — the old Hitter's progress is gone, but
+  the jackpot itself is untouched.
+- **Claiming it**: if the same player wins **2 hands in a row** (configurable
+  per room via `required_consecutive_wins`), they claim the entire jackpot —
+  added straight into their cumulative room total, on top of whatever they
+  won from the hand itself. The Hitter and streak then both reset, ready for
+  the next pot to start building.
+- **A void or tied hand** (a drawn Fight) never touches the Hitter, the
+  streak, or the jackpot — it's exactly as if that hand hadn't happened for
+  jackpot purposes.
+- **Funding the pot**: a fixed amount is added to the jackpot before every
+  new hand deals (`jackpot_contribution_per_hand`) — no one's score is
+  debited for it. (The schema also supports an ante-per-player mode and a
+  manual/host-funded-only mode; a room can only run one mode at a time, and
+  fixed-per-hand is what's wired up as the default today.)
+- **After a payout**: the jackpot resets to its configured starting amount
+  (`jackpot_starting_amount`) by default, rather than dropping to zero, so
+  there's always something building toward the next Hitter.
+- **Leaving the room**: if the current Hitter leaves between rounds, they
+  forfeit the streak (cleared back to no Hitter) but the jackpot itself is
+  untouched — whoever wins the next hand starts fresh as the new Hitter.
+- This all happens in the same atomic, version-gated transaction as the
+  hand's normal scoring — a hand can only ever be settled once, so the
+  jackpot can never be paid out twice for the same win.
+
 ## Explicitly out of scope for the MVP
 
 These are documented as intentional simplifications / future extensions,

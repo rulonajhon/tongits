@@ -122,3 +122,17 @@ export interface GameResults {
   gameId: string
   results: PlayerResult[]
 }
+
+/** The Hitter jackpot transition that happened as a result of this hand, if any — see RULES.md. */
+export interface HitterHistoryEntry {
+  gameId: string
+  handWinnerPlayerId: string | null
+  previousHitterPlayerId: string | null
+  newHitterPlayerId: string | null
+  previousStreak: number
+  newStreak: number
+  jackpotBefore: number
+  jackpotAfter: number
+  jackpotAwarded: boolean
+  jackpotWinnerPlayerId: string | null
+}
