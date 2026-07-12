@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { useGameStore } from '@/stores/gameStore'
@@ -13,7 +14,8 @@ interface ActionBarProps {
   side: 'left' | 'right'
 }
 
-interface ActionButtonProps {
+interface ActionButtonConfig {
+  id: string
   icon: ReactNode
   label: string
   variant: 'success' | 'info' | 'warning' | 'danger'
@@ -24,9 +26,19 @@ interface ActionButtonProps {
 // Fixed circle size with `!` overrides so the button can never balloon from
 // its own content (e.g. text wrapping) — the label lives outside the button
 // as plain text, not inside it, so it can't affect the button's dimensions.
-function ActionButton({ icon, label, variant, disabled, onClick }: ActionButtonProps) {
+// `offset` staggers each button diagonally toward the hand as more stack up,
+// and the enter/exit animation is what makes buttons pop in only once
+// they're actually usable, instead of sitting there greyed out.
+function ActionButton({ icon, label, variant, disabled, onClick, offset }: ActionButtonConfig & { offset: number }) {
   return (
-    <div className="flex flex-col items-center gap-0.5">
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.6, x: offset }}
+      animate={{ opacity: 1, scale: 1, x: offset }}
+      exit={{ opacity: 0, scale: 0.6 }}
+      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+      className="flex flex-col items-center gap-0.5"
+    >
       <Button
         pill
         variant={variant}
@@ -39,7 +51,7 @@ function ActionButton({ icon, label, variant, disabled, onClick }: ActionButtonP
         </span>
       </Button>
       <span className="text-[9px] leading-none text-white/60">{label}</span>
-    </div>
+    </motion.div>
   )
 }
 
@@ -77,57 +89,97 @@ export function ActionBar({ gameId, userId, side }: ActionBarProps) {
     return null
   }, [selectedCards, discardTop])
 
-  const canDiscard = isYourTurn && hasDrawn && selectedCards.length === 1 && !pendingAction
-  const canMeld = isYourTurn && hasDrawn && meldCandidate !== null && !pendingAction
-  const canSapaw = isYourTurn && hasDrawn && sapawCandidate && !pendingAction
-  const canFight = isYourTurn && hasDrawn && !pendingAction
-  const canPickUpMeld = isYourTurn && !hasDrawn && meldFromDiscardCandidate !== null && !pendingAction
+  // A button only shows up once it's actually something you could do right
+  // now — e.g. selecting exactly one card surfaces Discard (and Sapaw too,
+  // if you've also picked a target meld it can join) instead of a
+  // permanently-visible row of greyed-out icons.
+  const meldVisible = isYourTurn && hasDrawn && meldCandidate !== null
+  const sapawVisible = isYourTurn && hasDrawn && sapawCandidate
+  const pickUpVisible = isYourTurn && !hasDrawn && meldFromDiscardCandidate !== null
+  const discardVisible = isYourTurn && hasDrawn && selectedCards.length === 1
+  // Fight is only callable at the very start of your turn, before you've
+  // drawn — once you draw, that window is closed until your next turn.
+  const fightVisible = isYourTurn && !hasDrawn
 
   if (side === 'left') {
+    const buttons: ActionButtonConfig[] = []
+    if (meldVisible) {
+      buttons.push({
+        id: 'meld',
+        icon: '✓',
+        label: 'Meld',
+        variant: 'success',
+        disabled: pendingAction,
+        onClick: () => meld(meldCandidate!, selectedCards),
+      })
+    }
+    if (sapawVisible) {
+      buttons.push({
+        id: 'sapaw',
+        icon: '+',
+        label: 'Sapaw',
+        variant: 'info',
+        disabled: pendingAction,
+        onClick: () => sapaw(selectedMeldId!, selectedCards),
+      })
+    }
+    if (pickUpVisible) {
+      buttons.push({
+        id: 'pickup',
+        icon: '⇩',
+        label: 'Pick Up',
+        variant: 'success',
+        disabled: pendingAction,
+        onClick: () => meldFromDiscard(meldFromDiscardCandidate!, selectedCards, discardTop!),
+      })
+    }
     return (
-      <div className="flex flex-col items-center gap-1.5">
-        <ActionButton
-          icon="✓"
-          label="Meld"
-          variant="success"
-          disabled={!canMeld}
-          onClick={() => meld(meldCandidate!, selectedCards)}
-        />
-        <ActionButton
-          icon="+"
-          label="Sapaw"
-          variant="info"
-          disabled={!canSapaw}
-          onClick={() => sapaw(selectedMeldId!, selectedCards)}
-        />
-        <ActionButton
-          icon="⇩"
-          label="Pick Up"
-          variant="success"
-          disabled={!canPickUpMeld}
-          onClick={() => meldFromDiscard(meldFromDiscardCandidate!, selectedCards, discardTop!)}
-        />
+      <div className="flex flex-col items-start gap-1.5">
+        <AnimatePresence>
+          {buttons.map((btn, i) => (
+            <ActionButton key={btn.id} {...btn} offset={i * 16} />
+          ))}
+        </AnimatePresence>
       </div>
     )
   }
 
+  const rightButtons: ActionButtonConfig[] = []
+  if (fightVisible) {
+    rightButtons.push({
+      id: 'fight',
+      icon: '⚔',
+      label: 'Fight',
+      variant: 'warning',
+      disabled: pendingAction,
+      onClick: () => setConfirmFight(true),
+    })
+  }
+  if (discardVisible) {
+    rightButtons.push({
+      id: 'discard',
+      icon: '↑',
+      label: 'Discard',
+      variant: 'danger',
+      disabled: pendingAction,
+      onClick: () => discard(selectedCards[0]),
+    })
+  }
+
   return (
     <>
-      <div className="flex flex-col items-center gap-1.5">
-        <ActionButton icon="⚔" label="Fight" variant="warning" disabled={!canFight} onClick={() => setConfirmFight(true)} />
-        <ActionButton
-          icon="↑"
-          label="Discard"
-          variant="danger"
-          disabled={!canDiscard}
-          onClick={() => discard(selectedCards[0])}
-        />
+      <div className="flex flex-col items-end gap-1.5">
+        <AnimatePresence>
+          {rightButtons.map((btn, i) => (
+            <ActionButton key={btn.id} {...btn} offset={-i * 16} />
+          ))}
+        </AnimatePresence>
       </div>
 
       <Modal open={confirmFight} onClose={() => setConfirmFight(false)} title="Call a fight?">
         <p className="text-sm text-white/70">
-          All hands reveal now. Lowest unmelded value wins. If you're not the lowest, you'll pay double for
-          calling it.
+          All hands reveal now, using your hand exactly as it stands. Lowest unmelded value wins. If you're not
+          the lowest, you'll pay double for calling it.
         </p>
         <div className="mt-4 flex gap-2">
           <Button variant="secondary" className="flex-1" onClick={() => setConfirmFight(false)}>

@@ -15,29 +15,32 @@ if you want different scoring or sapaw conditions.
 
 ## Turn structure
 
-On your turn:
+At the very start of your turn, before anything else, you choose one of
+three things:
 
-1. **Draw** — either:
-   - one card from the closed draw pile (face-down, unseen until it's in
-     your hand); or
-   - the top card of the discard pile, but **only** if you use that exact
-     card, together with cards already in your hand, to form a brand-new
-     set or run *immediately, as part of the same action*. You can't take a
-     discard just to hold onto it for later, and only the player whose turn
-     it now is can take it — once anyone draws (or a further discard buries
-     it), that card is gone for good, same as always. This substitutes for
-     your normal draw; the rest of your turn proceeds exactly as if you'd
-     drawn blind. (Skip straight to a Fight if the draw pile is empty at the
-     start of your turn — see below.)
-2. Optionally **Meld** new sets/runs and/or **Sapaw** (attach cards from
-   your hand onto any existing table meld, yours or an opponent's,
-   including melds formed earlier in the same turn). Taking a discard card
-   only ever creates a **new** meld — it's never used to sapaw onto an
-   existing one.
-3. Either **Discard** exactly one card, ending your turn (unless melding
-   emptied your hand, in which case you've won and there's nothing left to
-   discard) — **or call Fight instead** (see below) to end the round on the
-   spot rather than discarding.
+1. **Draw** one card from the closed draw pile (face-down, unseen until
+   it's in your hand); or
+2. **Take the top discard card**, but **only** if you use that exact card,
+   together with cards already in your hand, to form a brand-new set or run
+   *immediately, as part of the same action*. You can't take a discard just
+   to hold onto it for later, and only the player whose turn it now is can
+   take it — once anyone draws (or a further discard buries it), that card
+   is gone for good, same as always. This substitutes for a normal draw;
+   the rest of your turn proceeds exactly as if you'd drawn blind; or
+3. **Call Fight** using your hand exactly as it stood at the end of your
+   last turn — no draw at all. This ends the round immediately in a
+   showdown (see below). Once you've drawn (options 1 or 2 above), this
+   option is gone for the rest of your turn — you can't draw, look at what
+   you got, and then decide to fight instead.
+
+If you drew (options 1 or 2), the rest of your turn continues:
+
+- Optionally **Meld** new sets/runs and/or **Sapaw** (attach cards from
+  your hand onto any existing table meld, yours or an opponent's, including
+  melds formed earlier in the same turn). Taking a discard card only ever
+  creates a **new** meld — it's never used to sapaw onto an existing one.
+- **Discard** exactly one card, ending your turn (unless melding emptied
+  your hand, in which case you've won and there's nothing left to discard).
 
 - **Set**: 3 or 4 cards of the same rank, all different suits.
 - **Run**: 3 or more consecutive cards of the same suit (ace-low only).
@@ -46,9 +49,10 @@ On your turn:
 
 ## Turn timer
 
-Each phase of your turn has its own **30-second clock**: 30s to draw, then a
-fresh 30s to discard (or call Fight) once you've drawn. Melding/sapaw-ing
-doesn't reset the clock — they just happen within your current 30s window.
+Each phase of your turn has its own **30-second clock**: 30s to draw/take
+the discard/call Fight, then — if you drew — a fresh 30s to discard.
+Melding/sapaw-ing doesn't reset the clock — they just happen within your
+current 30s window.
 
 If a phase's timer runs out, the server acts for you automatically: it draws
 on your behalf, or discards a card for you (preferring an unpaired card with
@@ -67,11 +71,13 @@ client-side clock, so it can't be gamed by a fast or slow client.
 - **Fight — automatic (pile exhaustion)**: if the draw pile is empty at the
   start of a turn, the round ends immediately in a showdown instead of
   offering a draw.
-- **Fight — player-called**: on your turn, after drawing, you may call a
-  fight yourself instead of discarding (the confirm dialog spells out the
-  stakes before you commit). Typically you'd do this once you've melded
-  most of your hand away and are confident your remaining cards are low
-  value.
+- **Fight — player-called**: at the very start of your turn, before drawing,
+  you may call a fight using your hand exactly as it stood at the end of
+  your last turn (the confirm dialog spells out the stakes before you
+  commit). Once you draw, this option is gone until your next turn.
+  Typically you'd do this once your hand is already low-value from melding
+  on previous turns and you don't want to risk drawing something that
+  raises it.
 - **Fight showdown resolution** (same for both triggers): all hands reveal;
   each player's unmelded cards are summed by point value; the lowest total
   wins. A tie for lowest is a **draw** — no payout.

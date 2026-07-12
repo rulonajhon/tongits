@@ -257,16 +257,20 @@ export function resolveFight(state: EngineGameState): WinResult {
 }
 
 /**
- * A player-initiated challenge: instead of discarding, they call a fight on
- * the spot. Same showdown as `resolveFight`, but tagged with who called it —
- * the caller pays double if it turns out they didn't have the lowest hand
- * (see scoring.computeFightResults), which is what keeps this a real gamble
- * rather than a free action to spam every turn.
+ * A player-initiated challenge: at the very start of their turn — before
+ * drawing, and using their hand exactly as it stood at the end of their last
+ * turn — a player may call a fight instead of drawing. Same showdown as
+ * `resolveFight`, but tagged with who called it — the caller pays double if
+ * it turns out they didn't have the lowest hand (see
+ * scoring.computeFightResults), which is what keeps this a real gamble
+ * rather than a free action to spam every turn. Mutually exclusive with
+ * drawing: once you've drawn this turn, this round's fight can only happen
+ * automatically via pile exhaustion (resolveFight), not by calling it.
  */
 export function applyFight(state: EngineGameState, playerId: string): ActionResult {
   requireTurn(state, playerId)
-  if (!state.hasDrawnThisTurn) {
-    throw new EngineError('You must draw before calling a fight', 'must_draw_first')
+  if (state.hasDrawnThisTurn) {
+    throw new EngineError('You must call a fight before drawing this turn', 'already_drawn')
   }
   const next = cloneState(state)
   next.status = 'finished'

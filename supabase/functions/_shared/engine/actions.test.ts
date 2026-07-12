@@ -505,7 +505,7 @@ describe('resolveFight', () => {
 describe('applyFight', () => {
   it('ends the game and tags the result with who called it', () => {
     const state = makeState({
-      hasDrawnThisTurn: true,
+      hasDrawnThisTurn: false,
       hands: [
         { playerId: 'p1', cards: ['AS'], hasDiscarded: false },
         { playerId: 'p2', cards: ['KD'], hasDiscarded: false },
@@ -520,17 +520,17 @@ describe('applyFight', () => {
   })
 
   it('rejects calling a fight out of turn', () => {
-    const state = makeState({ hasDrawnThisTurn: true })
+    const state = makeState({ hasDrawnThisTurn: false })
     expect(() => applyFight(state, 'p2')).toThrow(EngineError)
   })
 
-  it('rejects calling a fight before drawing', () => {
-    const state = makeState({ hasDrawnThisTurn: false })
-    expect(() => applyFight(state, 'p1')).toThrow(/draw before/)
+  it('rejects calling a fight after already drawing this turn', () => {
+    const state = makeState({ hasDrawnThisTurn: true })
+    expect(() => applyFight(state, 'p1')).toThrow(/before drawing/)
   })
 
   it('does not mutate the original state', () => {
-    const state = makeState({ hasDrawnThisTurn: true })
+    const state = makeState({ hasDrawnThisTurn: false })
     applyFight(state, 'p1')
     expect(state.status).toBe('playing')
   })
