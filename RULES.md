@@ -9,8 +9,10 @@ if you want different scoring or sapaw conditions.
 - 3 players, one standard 52-card deck, no jokers.
 - **Ace is always low** (A-2-3-4...-J-Q-K). There is no Q-K-A wraparound.
 - Each player is dealt 12 cards. The dealer additionally draws a 13th card
-  as their turn-start draw, and acts first. The dealer is chosen at random
-  each game (not always the host).
+  as their turn-start draw, and acts first. The dealer is the room's
+  current Hitter, if it has one (see below) — otherwise it's chosen at
+  random (not always the host). This means winning carries forward: the
+  Hitter deals, and acts first, in the very next round.
 - The remaining cards form the face-down draw pile.
 
 ## Turn structure
@@ -136,6 +138,9 @@ decided entirely by the normal Tongits rules above. It's about who gets to
   win streak of 1. If a *different* player wins the next hand, they become
   the new Hitter with a streak of 1 — the old Hitter's progress is gone, but
   the jackpot itself is untouched.
+- **Dealing advantage**: the Hitter deals (and so acts first) the next
+  round — see Setup above. Losing means handing that edge to whoever just
+  beat you, along with the streak itself.
 - **Claiming it**: if the same player wins **2 hands in a row** (configurable
   per room via `required_consecutive_wins`), they claim the entire jackpot —
   added straight into their cumulative room total, on top of whatever they

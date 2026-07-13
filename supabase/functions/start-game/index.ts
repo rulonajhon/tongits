@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
 
     const { data: room, error: roomError } = await admin
       .from('rooms')
-      .select('id, host_id, status')
+      .select('id, host_id, status, current_hitter_player_id')
       .eq('id', roomId)
       .single()
 
@@ -36,7 +36,14 @@ Deno.serve(async (req) => {
     }
 
     const playerOrder = players.map((p) => p.player_id)
-    const dealerId = playerOrder[Math.floor(Math.random() * playerOrder.length)]
+    // The current Hitter deals (and so acts first) next round — winning
+    // carries that edge forward. Falls back to random when there's no
+    // Hitter yet: the room's very first round, or right after a jackpot
+    // payout resets current_hitter_player_id to null.
+    const dealerId =
+      room.current_hitter_player_id && playerOrder.includes(room.current_hitter_player_id)
+        ? room.current_hitter_player_id
+        : playerOrder[Math.floor(Math.random() * playerOrder.length)]
 
     const { state } = dealNewGame(playerOrder, dealerId)
 
